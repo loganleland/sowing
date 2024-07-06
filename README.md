@@ -6,4 +6,4 @@
 
 **Sowing** is a suite of tools dedicated to the analysis of the intermediate languages [(BNIL)](https://docs.binary.ninja/dev/bnil-overview.html) of the reverse engineering platform, [Binary Ninja](https://binary.ninja/).
 
-Since Sowing operates over BNIL, any loader or architecture supported by Binary Ninja presently and in the future is supported.
+Since Sowing operates over BNIL any loader or architecture supported by Binary Ninja presently and in the future is supported.
