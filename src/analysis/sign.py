@@ -1,3 +1,4 @@
+from email.policy import default
 import binaryninja
 from enum import Enum
 
@@ -34,21 +35,25 @@ def updateContext(inst, sign: Sign):
 
 
 def processSetVar(inst: binaryninja.mediumlevelil.MediumLevelILSetVar):
-  if isinstance(inst.dest.type, binaryninja.types.IntegerType):
-    if isinstance(inst.src, binaryninja.commonil.Constant):
-      updateContext(inst, deriveSignInt(inst.src.constant))
-    elif isinstance(inst.src, binaryninja.commonil.VariableInstruction):
-      updateContext(inst, deriveSignVar(inst.src.src.name))
-    elif isinstance(inst.src, binaryninja.commonil.Arithmetic):
-      match type(inst.src):
-        case binaryninja.mediumlevelil.MediumLevelILZx:
-          print(inst.src)
+  updateContext(inst, getSign(inst.src))
+  return None
+
+
+def processArith(inst: binaryninja.commonil.Arithmetic):
+  print(inst)
+
+def processConstant(expr: binaryninja.commonil.Constant) -> Sign:
+  if isinstance(expr, binaryninja.mediumlevelil.MediumLevelILConst):
+    print(f"constant: {type(expr.constant)}")
 
 
 def getSign(expr) -> Sign:
-  match type(expr):
-    case binaryninja.commonil.SetVar:
-      print("set var")
+  if isinstance(expr, binaryninja.commonil.Constant):
+    processConstant(expr)
+  if isinstance(expr, binaryninja.commonil.SetVar):
+    processSetVar(expr)
+  else:
+    pass
 
 
 def test(bv: binaryninja.binaryview.BinaryView,
