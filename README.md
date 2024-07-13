@@ -1,4 +1,4 @@
-# sowing
+# Sowing
 
 <img src="https://github.com/loganleland/sow/assets/6620612/4ef6608d-195d-4a8c-9498-a8ecfa2d73d2" alt="drawing" width="300"/>
 
