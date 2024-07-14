@@ -108,7 +108,15 @@ def processSubtraction(expr: binaryninja.mediumlevelil.MediumLevelILSub) -> Sign
           return Sign.neg
         case Sign.neg:
           return Sign.top
- 
+
+
+def processXor(expr: binaryninja.mediumlevelil.MediumLevelILXor) -> Sign:
+  leftSign = getSign(expr.left)
+  rightSign = getSign(expr.right)
+  if leftSign == Sign.zero and rightSign == Sign.zero:
+    return Sign.zero
+  return Sign.top
+
 
 def processArith(expr: binaryninja.commonil.Arithmetic):
   match type(expr):
@@ -142,7 +150,9 @@ def processArith(expr: binaryninja.commonil.Arithmetic):
       if Sign.neg == getSign(expr.left):
         return Sign.neg
       return Sign.top
-  print(f"Unimplemented: processArith({expr}) of ty {type(expr)}")
+    case binaryninja.mediumlevelil.MediumLevelILXor:
+      return processXor(expr)
+  #print(f"Unimplemented: processArith({expr}) of ty {type(expr)}")
 
 
 def processConstant(expr: binaryninja.commonil.Constant) -> Sign:
@@ -819,8 +829,6 @@ def processComparison(expr: binaryninja.commonil.Comparison) -> Sign:
       return processCmpSle(expr)
     case binaryninja.mediumlevelil.MediumLevelILCmpSgt:
       return processCmpSgt(expr)
-    case binaryninja.mediumlevelil.MediumLevelILFcmpE:
-      print(f"unimpl comparison: ty {type(expr)}, expr: {expr}, left {type(expr.left)}, right {type(expr.right)}")
     case default:
       print(f"unimpl comparison {type(expr)}")
 
