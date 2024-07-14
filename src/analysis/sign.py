@@ -36,29 +36,350 @@ def updateContext(inst, sign: Sign):
 
 def processSetVar(inst: binaryninja.mediumlevelil.MediumLevelILSetVar):
   updateContext(inst, getSign(inst.src))
-  return None
 
 
-def processArith(inst: binaryninja.commonil.Arithmetic):
-  print(inst)
+def processAddition(expr: binaryninja.mediumlevelil.MediumLevelILAdd) -> Sign:
+  leftSign = getSign(expr.left)
+  rightSign = getSign(expr.right)
+  if leftSign == None or rightSign == None:
+    # Unmodeled or weird behavior
+    print(f"2: Evalute to None: {expr}")
+    return None
+  if leftSign == Sign.bottom or rightSign == Sign.bottom:
+    # Unmodeled or weird behavior
+    return Sign.bottom
+  if leftSign == Sign.top or rightSign == Sign.top:
+    return Sign.top
+  if leftSign == Sign.zero:
+    return rightSign
+  match leftSign:
+    case Sign.pos:
+      match rightSign:
+        case Sign.zero:
+          return Sign.pos
+        case Sign.pos:
+          return Sign.pos
+        case Sign.neg:
+          return Sign.top
+    case Sign.neg:
+      match rightSign:
+        case Sign.zero:
+          return Sign.neg
+        case Sign.pos:
+          return Sign.top
+        case Sign.neg:
+          return Sign.pos
+
+
+def processSubtraction(expr: binaryninja.mediumlevelil.MediumLevelILSub) -> Sign:
+  leftSign = getSign(expr.left)
+  rightSign = getSign(expr.right)
+  if leftSign == None or rightSign == None:
+    print(f"3: Evaluate to None: {expr}")
+    return None
+  elif leftSign == Sign.bottom or rightSign == Sign.bottom:
+    return Sign.bottom
+  elif leftSign == Sign.top or rightSign == Sign.top:
+    return Sign.top
+  elif leftSign == Sign.zero:
+    return rightSign
+  match leftSign:
+    case Sign.pos:
+      match rightSign:
+        case Sign.zero:
+          return Sign.pos
+        case Sign.pos:
+          return Sign.top
+        case Sign.neg:
+          return Sign.pos
+    case Sign.neg:
+      match rightSign:
+        case Sign.zero:
+          return Sign.zero
+        case Sign.pos:
+          return Sign.neg
+        case Sign.neg:
+          return Sign.top
+ 
+
+def processArith(expr: binaryninja.commonil.Arithmetic):
+  match type(expr):
+    case binaryninja.mediumlevelil.MediumLevelILZx:
+      match getSign(expr.src):
+        case Sign.pos:
+          return Sign.pos
+        case Sign.neg:
+          return Sign.top
+        case Sign.zero:
+          return Sign.zero
+        case Sign.top:
+          return Sign.top
+        case Sign.bottom:
+          return Sign.bottom
+        case None:
+          print(f"1: Evaluate to None: {expr}")
+          return None
+    case binaryninja.mediumlevelil.MediumLevelILSx:
+      return getSign(expr.src)
+    case binaryninja.mediumlevelil.MediumLevelILAdd:
+      return processAddition(expr)
+    case binaryninja.mediumlevelil.MediumLevelILSub:
+      return processSubtraction(expr)
+  print(f"processArith({expr}): {type(expr)}")
+
 
 def processConstant(expr: binaryninja.commonil.Constant) -> Sign:
   if isinstance(expr, binaryninja.mediumlevelil.MediumLevelILConst):
-    print(f"constant: {type(expr.constant)}")
+    return getSign(expr.constant)
+  elif isinstance(expr, binaryninja.mediumlevelil.MediumLevelILConstPtr):
+    return Sign.bottom
+  elif isinstance(expr, binaryninja.mediumlevelil.MediumLevelILImport):
+    return getSign(expr.constant)
+  else:
+    print(f"Unimplemented expression: {expr} of ty: {type(expr)}")
+    return None
 
+
+def processInt(expr: int) -> Sign:
+  match expr:
+    case 0:
+      return Sign.zero
+    case _ if expr > 0:
+      return Sign.pos
+    case _ if expr < Sign.neg:
+      return Sign.neg
+ 
+
+def processVar(expr: binaryninja.commonil.VariableInstruction) -> Sign:
+  if expr.var.name not in context.keys():
+    return Sign.bottom
+  return context[expr.var.name]
+
+
+def processCmpE(expr: binaryninja.mediumlevelil.MediumLevelILCmpE) -> Sign:
+  leftSign = getSign(expr.left)
+  rightSign = getSign(expr.right)
+  match leftSign:
+    case Sign.zero:
+      match rightSign:
+        case Sign.zero:
+          # 0 == 0 -> 1
+          return Sign.pos
+        case Sign.neg:
+          # 0 == -n -> 0
+          return Sign.zero
+        case Sign.pos:
+          # 0 == +n -> 0
+          return Sign.zero
+        case Sign.top:
+          # 0 == T -> T
+          return Sign.top
+        case Sign.bottom:
+          # 0 == B -> T
+          return Sign.top
+    case Sign.neg:
+      match rightSign:
+        case Sign.zero:
+          # -n == 0 -> 0
+          return Sign.zero
+        case Sign.neg:
+          # -n == -v -> T
+          return Sign.top
+        case Sign.pos:
+          # -n == +v -> 0
+          return Sign.zero
+        case Sign.top:
+          # -n == T -> T
+          return Sign.top
+        case Sign.bottom:
+          # -n == B -> T
+          return Sign.top
+    case Sign.pos:
+      match rightSign:
+        case Sign.zero:
+          # +n == 0 -> 0
+          return Sign.zero
+        case Sign.neg:
+          # +n == -v -> 0
+          return Sign.zero
+        case Sign.pos:
+          # +n == +v -> T
+          return Sign.top
+        case Sign.top:
+          # +n == T -> T
+          return Sign.top
+        case Sign.bottom:
+          # +n == B -> T
+          return Sign.top
+    case Sign.top:
+      return Sign.top
+    case Sign.bottom:
+      return Sign.top
+
+
+def processCmpNe(expr: binaryninja.mediumlevelil.MediumLevelILCmpNe) -> Sign:
+  leftSign = getSign(expr.left)
+  rightSign = getSign(expr.right)
+  match leftSign:
+    case Sign.zero:
+      match rightSign:
+        case Sign.zero:
+          # 0 != 0 -> 0
+          return Sign.zero
+        case Sign.neg:
+          # 0 == -n -> 1
+          return Sign.pos
+        case Sign.pos:
+          # 0 == +n -> 1
+          return Sign.pos
+        case Sign.top:
+          # 0 != T -> T
+          return Sign.top
+        case Sign.bottom:
+          # 0 != B -> T
+          return Sign.top
+    case Sign.neg:
+      match rightSign:
+        case Sign.zero:
+          # -n != 0 -> 1
+          return Sign.pos
+        case Sign.neg:
+          # -n != -v -> T
+          return Sign.top
+        case Sign.pos:
+          # -n != +v -> 1
+          return Sign.pos
+        case Sign.top:
+          # -n != T -> T
+          return Sign.top
+        case Sign.bottom:
+          # -n != B -> T
+          return Sign.top
+    case Sign.pos:
+      match rightSign:
+        case Sign.zero:
+          # +n != 0 -> 1
+          return Sign.pos
+        case Sign.neg:
+          # +n != -v -> 1
+          return Sign.pos
+        case Sign.pos:
+          # +n != +v -> T
+          return Sign.top
+        case Sign.top:
+          # +n != T -> T
+          return Sign.top
+        case Sign.bottom:
+          # +n != B -> T
+          return Sign.top
+    case Sign.top:
+      return Sign.top
+    case Sign.bottom:
+      return Sign.top
+
+
+def processCmpSge(expr: binaryninja.mediumlevelil.MediumLevelILCmpSge) -> Sign:
+  leftSign = getSign(expr.left)
+  rightSign = getSign(expr.right)
+  match leftSign:
+    case Sign.zero:
+      match rightSign:
+        case Sign.zero:
+          # 0 >= 0 -> 1
+          return Sign.pos
+        case Sign.neg:
+          # 0 >= -n -> 1
+          return Sign.pos
+        case Sign.pos:
+          # 0 >= +n -> 0
+          return Sign.zero
+        case Sign.top:
+          # 0 >= T -> T
+          return Sign.top
+        case Sign.bottom:
+          # 0 >= B -> T
+          return Sign.top
+    case Sign.neg:
+      match rightSign:
+        case Sign.zero:
+          # -n >= 0 -> 0
+          return Sign.neg
+        case Sign.neg:
+          # -n >= -v -> T
+          return Sign.top
+        case Sign.pos:
+          # -n >= +v -> 0
+          return Sign.zero
+        case Sign.top:
+          # -n >= T -> T
+          return Sign.top
+        case Sign.bottom:
+          # -n >= B -> T
+          return Sign.top
+    case Sign.pos:
+      match rightSign:
+        case Sign.zero:
+          # +n >= 0 -> 1
+          return Sign.pos
+        case Sign.neg:
+          # +n >= -v -> 1
+          return Sign.pos
+        case Sign.pos:
+          # +n >= +v -> T
+          return Sign.top
+        case Sign.top:
+          # +n >= T -> T
+          return Sign.top
+        case Sign.bottom:
+          # +n >= B -> T
+          return Sign.top
+    case Sign.top:
+      return Sign.top
+    case Sign.bottom:
+      return Sign.top
+
+
+def processComparison(expr: binaryninja.commonil.Comparison) -> Sign:
+  match type(expr):
+    case binaryninja.mediumlevelil.MediumLevelILCmpE:
+      return processCmpE(expr)
+    case binaryninja.mediumlevelil.MediumLevelILCmpNe:
+      return processCmpNe(expr)
+    case binaryninja.mediumlevelil.MediumLevelILCmpSge:
+      return processCmpSge(expr)
+    case default:
+      print(f"unimpl comparison {type(expr)}")
 
 def getSign(expr) -> Sign:
   if isinstance(expr, binaryninja.commonil.Constant):
-    processConstant(expr)
-  if isinstance(expr, binaryninja.commonil.SetVar):
+    return processConstant(expr)
+  elif isinstance(expr, binaryninja.commonil.SetVar):
     processSetVar(expr)
+  elif isinstance(expr, binaryninja.commonil.VariableInstruction):
+    return processVar(expr)
+  elif isinstance(expr, binaryninja.commonil.Arithmetic):
+    return processArith(expr)
+  elif isinstance(expr, binaryninja.commonil.Load):
+    return getSign(expr.src)
+  elif isinstance(expr, binaryninja.commonil.Call):
+    # Future work here, support call instructions
+    return Sign.bottom
+  elif isinstance(expr, binaryninja.commonil.ControlFlow):
+    return Sign.bottom
+  elif isinstance(expr, binaryninja.commonil.Comparison):
+    return processComparison(expr)
+  elif isinstance(expr, binaryninja.mediumlevelil.MediumLevelILBoolToInt):
+    return getSign(expr.src)
+  elif isinstance(expr, int):
+    return processInt(expr)
   else:
-    pass
+    print(f"getSign unimpl expr: {expr}, ty: {type(expr)}")
 
 
 def test(bv: binaryninja.binaryview.BinaryView,
          entry: binaryninja.function.Function):
   for inst in entry.mlil.instructions:
+    print(f"Processing: {inst}")
     getSign(inst)
     #if isinstance(inst, binaryninja.commonil.SetVar):
     #  processSetVar(inst)
