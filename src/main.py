@@ -1,7 +1,7 @@
 import argparse
 import binaryninja
 from sys import *
-from analysis.sign import test
+from analysis.sign import signAnalysis
 
 
 if __name__ == '__main__':
@@ -37,4 +37,4 @@ if __name__ == '__main__':
 
   if args.sign is not None:
     print("[*] Executing sign analysis")
-    test(bv, entry)
+    signAnalysis(bv, entry)
