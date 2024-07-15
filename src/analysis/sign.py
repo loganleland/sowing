@@ -2,7 +2,6 @@ import binaryninja
 from enum import Enum
 
 context = dict()
-types = set()
 
 class Sign(Enum):
   top = 1
@@ -12,31 +11,43 @@ class Sign(Enum):
   bottom = 5
 
 
-# Derive sign of integer
-def deriveSignInt(op: int) -> Sign:
-  if op == 0: return Sign.zero
-  if op > 0: return Sign.pos
-  return Sign.neg
-
-
-# Derive sign of variable identifier from context
-def deriveSignVar(op: str) -> Sign:
+#==================================================================
+# processVar
+#==================================================================
+# Derive sign of variable (by identifier) from context
+#==================================================================
+def processVar(op: str) -> Sign:
   if op not in context.keys():
     return Sign.bottom
   return context[op]
 
 
-def updateContext(expr, sign: Sign):
+#==================================================================
+# updateContext
+#==================================================================
+# Write variable identifier to sign mapping into context
+#==================================================================
+def updateContext(expr: binaryninja.commonil.SetVar, sign: Sign):
   if expr.dest.name not in context.keys():
     context[expr.dest.name] = sign
   else:
     context[expr.dest.name] = sign
 
 
+#==================================================================
+# processSetVar
+#==================================================================
+# Update context via binaryninja.commonil.SetVar instruction
+#==================================================================
 def processSetVar(expr: binaryninja.commonil.SetVar):
   updateContext(expr, getSign(expr.src))
 
 
+#==================================================================
+# processAnd
+#==================================================================
+# Derive sign of binaryninja.mediumlevelil.MediumLevelILAnd
+#==================================================================
 def processAnd(expr: binaryninja.mediumlevelil.MediumLevelILAnd) -> Sign:
   leftSign = getSign(expr.left)
   rightSign = getSign(expr.right)
@@ -45,6 +56,11 @@ def processAnd(expr: binaryninja.mediumlevelil.MediumLevelILAnd) -> Sign:
   return Sign.top
 
 
+#==================================================================
+# processOr
+#==================================================================
+# Derive sign of binaryninja.mediumlevelil.MediumLevelILOr
+#==================================================================
 def processOr(expr: binaryninja.mediumlevelil.MediumLevelILOr) -> Sign:
   leftSign = getSign(expr.left)
   rightSign = getSign(expr.right)
@@ -53,6 +69,11 @@ def processOr(expr: binaryninja.mediumlevelil.MediumLevelILOr) -> Sign:
   return Sign.top
 
 
+#==================================================================
+# processAddition
+#==================================================================
+# Derive sign of binaryninja.mediumlevelil.MediumLevelILAdd
+#==================================================================
 def processAddition(expr: binaryninja.mediumlevelil.MediumLevelILAdd) -> Sign:
   leftSign = getSign(expr.left)
   rightSign = getSign(expr.right)
@@ -82,6 +103,11 @@ def processAddition(expr: binaryninja.mediumlevelil.MediumLevelILAdd) -> Sign:
           return Sign.pos
 
 
+#==================================================================
+# processSubtraction
+#==================================================================
+# Derive sign of binaryninja.mediumlevelil.MediumLevelILSub
+#==================================================================
 def processSubtraction(expr: binaryninja.mediumlevelil.MediumLevelILSub) -> Sign:
   leftSign = getSign(expr.left)
   rightSign = getSign(expr.right)
@@ -110,6 +136,11 @@ def processSubtraction(expr: binaryninja.mediumlevelil.MediumLevelILSub) -> Sign
           return Sign.top
 
 
+#==================================================================
+# processXor
+#==================================================================
+# Derive sign of binaryninja.mediumlevelil.MediumLevelILXor
+#==================================================================
 def processXor(expr: binaryninja.mediumlevelil.MediumLevelILXor) -> Sign:
   leftSign = getSign(expr.left)
   rightSign = getSign(expr.right)
@@ -118,6 +149,11 @@ def processXor(expr: binaryninja.mediumlevelil.MediumLevelILXor) -> Sign:
   return Sign.top
 
 
+#==================================================================
+# processArith
+#==================================================================
+# Derive sign of binaryninja.commonil.Arithmetic
+#==================================================================
 def processArith(expr: binaryninja.commonil.Arithmetic):
   match type(expr):
     case binaryninja.mediumlevelil.MediumLevelILZx:
@@ -152,9 +188,14 @@ def processArith(expr: binaryninja.commonil.Arithmetic):
       return Sign.top
     case binaryninja.mediumlevelil.MediumLevelILXor:
       return processXor(expr)
-  #print(f"Unimplemented: processArith({expr}) of ty {type(expr)}")
+  print(f"Unimplemented: processArith({expr}) of ty {type(expr)}")
 
 
+#==================================================================
+# processConstant
+#==================================================================
+# Derive sign of binaryninja.commonil.Constant
+#==================================================================
 def processConstant(expr: binaryninja.commonil.Constant) -> Sign:
   if isinstance(expr, binaryninja.mediumlevelil.MediumLevelILConst):
     return getSign(expr.constant)
@@ -167,22 +208,35 @@ def processConstant(expr: binaryninja.commonil.Constant) -> Sign:
     return None
 
 
+#==================================================================
+# processInt
+#==================================================================
+# Derive sign of raw python int
+#==================================================================
 def processInt(expr: int) -> Sign:
-  match expr:
-    case 0:
-      return Sign.zero
-    case _ if expr > 0:
-      return Sign.pos
-    case _ if expr < 0:
-      return Sign.neg
- 
+  if expr == 0: return Sign.zero
+  if expr > 0: return Sign.pos
+  return Sign.neg
 
+
+
+#==================================================================
+# processVar
+#==================================================================
+# Derive sign of binaryninja.commonil.VariableInstruction
+# from context
+#==================================================================
 def processVar(expr: binaryninja.commonil.VariableInstruction) -> Sign:
   if expr.var.name not in context.keys():
     return Sign.bottom
   return context[expr.var.name]
 
 
+#==================================================================
+# processCmpE
+#==================================================================
+# Derive sign of binaryninja.mediumlevelil.MediumLevelILCmpE
+#==================================================================
 def processCmpE(expr: binaryninja.mediumlevelil.MediumLevelILCmpE) -> Sign:
   leftSign = getSign(expr.left)
   rightSign = getSign(expr.right)
@@ -244,6 +298,11 @@ def processCmpE(expr: binaryninja.mediumlevelil.MediumLevelILCmpE) -> Sign:
       return Sign.top
 
 
+#==================================================================
+# processCmpNe
+#==================================================================
+# Derive sign of binaryninja.mediumlevelil.MediumLevelILCmpNe
+#==================================================================
 def processCmpNe(expr: binaryninja.mediumlevelil.MediumLevelILCmpNe) -> Sign:
   leftSign = getSign(expr.left)
   rightSign = getSign(expr.right)
@@ -305,6 +364,11 @@ def processCmpNe(expr: binaryninja.mediumlevelil.MediumLevelILCmpNe) -> Sign:
       return Sign.top
 
 
+#==================================================================
+# processCmpSge
+#==================================================================
+# Derive sign of binaryninja.mediumlevelil.MediumLevelILCmpSge
+#==================================================================
 def processCmpSge(expr: binaryninja.mediumlevelil.MediumLevelILCmpSge) -> Sign:
   leftSign = getSign(expr.left)
   rightSign = getSign(expr.right)
@@ -366,6 +430,11 @@ def processCmpSge(expr: binaryninja.mediumlevelil.MediumLevelILCmpSge) -> Sign:
       return Sign.top
 
 
+#==================================================================
+# processCmpUgt
+#==================================================================
+# Derive sign of binaryninja.mediumlevelil.MediumLevelILCmpUgt
+#==================================================================
 def processCmpUgt(expr: binaryninja.mediumlevelil.MediumLevelILCmpUgt) -> Sign:
   leftSign = getSign(expr.left)
   rightSign = getSign(expr.right)
@@ -429,6 +498,11 @@ def processCmpUgt(expr: binaryninja.mediumlevelil.MediumLevelILCmpUgt) -> Sign:
       return Sign.top
 
 
+#==================================================================
+# processCmpSlt
+#==================================================================
+# Derive sign of binaryninja.mediumlevelil.MediumLevelILCmpSlt
+#==================================================================
 def processCmpSlt(expr: binaryninja.mediumlevelil.MediumLevelILCmpSlt) -> Sign:
   leftSign = getSign(expr.left)
   rightSign = getSign(expr.right)
@@ -492,6 +566,11 @@ def processCmpSlt(expr: binaryninja.mediumlevelil.MediumLevelILCmpSlt) -> Sign:
       return Sign.top
 
 
+#==================================================================
+# processCmpSle
+#==================================================================
+# Derive sign of binaryninja.mediumlevelil.MediumLevelILCmpSle
+#==================================================================
 def processCmpSle(expr: binaryninja.mediumlevelil.MediumLevelILCmpSle) -> Sign:
   leftSign = getSign(expr.left)
   rightSign = getSign(expr.right)
@@ -555,6 +634,11 @@ def processCmpSle(expr: binaryninja.mediumlevelil.MediumLevelILCmpSle) -> Sign:
       return Sign.top
 
 
+#==================================================================
+# processCmpSgt
+#==================================================================
+# Derive sign of binaryninja.mediumlevelil.MediumLevelILCmpSgt
+#==================================================================
 def processCmpSgt(expr: binaryninja.mediumlevelil.MediumLevelILCmpSgt) -> Sign:
   leftSign = getSign(expr.left)
   rightSign = getSign(expr.right)
@@ -618,6 +702,11 @@ def processCmpSgt(expr: binaryninja.mediumlevelil.MediumLevelILCmpSgt) -> Sign:
       return Sign.top
 
 
+#==================================================================
+# processCmpUge
+#==================================================================
+# Derive sign of binaryninja.mediumlevelil.MediumLevelILCmpUge
+#==================================================================
 def processCmpUge(expr: binaryninja.mediumlevelil.MediumLevelILCmpUge) -> Sign:
   leftSign = getSign(expr.left)
   rightSign = getSign(expr.right)
@@ -681,7 +770,12 @@ def processCmpUge(expr: binaryninja.mediumlevelil.MediumLevelILCmpUge) -> Sign:
       return Sign.top
 
 
-def processCmpUle(expr: binaryninja.mediumlevelil.MediumLevelILCmpUge) -> Sign:
+#==================================================================
+# processCmpUle
+#==================================================================
+# Derive sign of binaryninja.mediumlevelil.MediumLevelILCmpUle
+#==================================================================
+def processCmpUle(expr: binaryninja.mediumlevelil.MediumLevelILCmpUle) -> Sign:
   leftSign = getSign(expr.left)
   rightSign = getSign(expr.right)
   match leftSign:
@@ -744,7 +838,12 @@ def processCmpUle(expr: binaryninja.mediumlevelil.MediumLevelILCmpUge) -> Sign:
       return Sign.top
 
 
-def processCmpUlt(expr: binaryninja.mediumlevelil.MediumLevelILCmpUge) -> Sign:
+#==================================================================
+# processCmpUlt
+#==================================================================
+# Derive sign of binaryninja.mediumlevelil.MediumLevelILCmpUle
+#==================================================================
+def processCmpUlt(expr: binaryninja.mediumlevelil.MediumLevelILCmpUlt) -> Sign:
   leftSign = getSign(expr.left)
   rightSign = getSign(expr.right)
   match leftSign:
@@ -807,6 +906,11 @@ def processCmpUlt(expr: binaryninja.mediumlevelil.MediumLevelILCmpUge) -> Sign:
       return Sign.top
 
 
+#==================================================================
+# processComparison
+#==================================================================
+# Derive sign of binaryninja.commonil.Comparison
+#==================================================================
 def processComparison(expr: binaryninja.commonil.Comparison) -> Sign:
   match type(expr):
     case binaryninja.mediumlevelil.MediumLevelILCmpE:
@@ -833,6 +937,11 @@ def processComparison(expr: binaryninja.commonil.Comparison) -> Sign:
       print(f"unimpl comparison {type(expr)}")
 
 
+#==================================================================
+# getSign
+#==================================================================
+# Derive type of mediumlevelIL instruction then derive sign
+#==================================================================
 def getSign(expr) -> Sign:
   if isinstance(expr, binaryninja.commonil.Constant):
     return processConstant(expr)
@@ -877,8 +986,14 @@ def getSign(expr) -> Sign:
     print(f"getSign unimpl expr: {expr}, ty: {type(expr)}")
 
 
+#==================================================================
+# signAnalysis
+#==================================================================
+# Top level sign analysis function. 
+# For each instruction in the entry function update context
+# as needed with variable identifers mapped to their sign
+#==================================================================
 def signAnalysis(bv: binaryninja.binaryview.BinaryView,
-             entry: binaryninja.function.Function):
-  for func in bv.functions:
-    for inst in func.mlil.instructions:
-      getSign(inst)
+                 entry: binaryninja.function.Function):
+  for inst in entry.mlil.instructions:
+    getSign(inst)
