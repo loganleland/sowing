@@ -4,7 +4,7 @@
 
 *verb: plant (seed) by scattering it on or in the earth*
 
-**Sowing** is a suite of tools dedicated to the analysis of any loader and architecture supported by [Binary Ninja](https://binary.ninja/)
+**Sowing** is a suite of tools dedicated to the analysis of any loader and architecture supported by [Binary Ninja](https://binary.ninja/). Currently all analysis operates over [Medium Level IL](https://docs.binary.ninja/dev/bnil-mlil.html).
 
 | Analysis | Maturity | Path |
 | -------- | -------- | -------- |
