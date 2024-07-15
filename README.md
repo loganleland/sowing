@@ -4,4 +4,8 @@
 
 *verb: plant (seed) by scattering it on or in the earth*
 
-**Sowing** is a suite of tools dedicated to the analysis of the intermediate languages [(BNIL)](https://docs.binary.ninja/dev/bnil-overview.html) of [Binary Ninja](https://binary.ninja/).
+**Sowing** is a suite of tools dedicated to the analysis of any loader and architecture supported by [Binary Ninja](https://binary.ninja/)
+
+| Analysis | Maturity | Path |
+| -------- | -------- | -------- |
+| Sign     | Initial  | [Implementation]([https://github.com/loganleland/sowing/tree/main/src/analysis](https://github.com/loganleland/sowing/blob/main/src/analysis/sign.py)) |
