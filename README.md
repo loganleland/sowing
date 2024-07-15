@@ -9,3 +9,18 @@
 | Analysis | Maturity | Path |
 | -------- | -------- | -------- |
 | Sign     | Initial  | [Implementation](https://github.com/loganleland/sowing/blob/main/src/analysis/sign.py) |
+
+# Usage
+Presently Sowing can be used from the command line by specifying:
+- Analysis to be executed
+- Entry function symbol name
+- Path to binary ninja database (bndb)
+  
+```python3 main.py -sign -entry main -bndb ../sudo.bndb```
+
+The bndb specified will contain tags to be reviewed.
+
+# Documentation of Binary Ninja
+- [BNIL](https://docs.binary.ninja/dev/bnil-overview.html)
+- [mediumlevelil module](https://api.binary.ninja/binaryninja.mediumlevelil-module.html#mediumlevelil-module)
+- [commonil module](https://api.binary.ninja/binaryninja.commonil-module.html#commonil-module)
