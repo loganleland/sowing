@@ -4,6 +4,4 @@
 
 *verb: plant (seed) by scattering it on or in the earth*
 
-**Sowing** is a suite of tools dedicated to the analysis of the intermediate languages [(BNIL)](https://docs.binary.ninja/dev/bnil-overview.html) of the reverse engineering platform, [Binary Ninja](https://binary.ninja/).
-
-Since Sowing operates over BNIL any loader and architecture supported by Binary Ninja presently and in the future is supported.
+**Sowing** is a suite of tools dedicated to the analysis of the intermediate languages [(BNIL)](https://docs.binary.ninja/dev/bnil-overview.html) of [Binary Ninja](https://binary.ninja/).
