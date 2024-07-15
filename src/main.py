@@ -1,7 +1,7 @@
 import argparse
 import binaryninja
 from sys import *
-from analysis.sign import signAnalysis
+from analysis.sign.main import signAnalysis
 
 
 if __name__ == '__main__':
