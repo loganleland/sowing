@@ -20,6 +20,10 @@ Presently Sowing can be used from the command line by specifying:
 
 The bndb specified will contain tags to be reviewed.
 
+# Installation
+Simply have the binary ninja api in your path (execute [install_api.py](https://github.com/Vector35/binaryninja-api/blob/dev/scripts/install_api.py) and clone this repo.
+Once a threshold maturity has been reached this code should be downloadable via the binary ninja plugin manager.
+
 # Documentation of Binary Ninja
 - [BNIL](https://docs.binary.ninja/dev/bnil-overview.html)
 - [mediumlevelil module](https://api.binary.ninja/binaryninja.mediumlevelil-module.html#mediumlevelil-module)
