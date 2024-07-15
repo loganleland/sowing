@@ -8,4 +8,4 @@
 
 | Analysis | Maturity | Path |
 | -------- | -------- | -------- |
-| Sign     | Initial  | [Implementation]([https://github.com/loganleland/sowing/tree/main/src/analysis](https://github.com/loganleland/sowing/blob/main/src/analysis/sign.py)) |
+| Sign     | Initial  | [Implementation](https://github.com/loganleland/sowing/blob/main/src/analysis/sign.py) |
