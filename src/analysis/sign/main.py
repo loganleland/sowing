@@ -192,6 +192,15 @@ def processArith(expr: binaryninja.commonil.Arithmetic):
       if getSign(expr.src) == Sign.zero:
         return Sign.zero
       return Sign.top
+    case binaryninja.mediumlevelil.MediumLevelILDivu:
+      # Since arm64 rounds towards 0, can't reason about
+      # too much detail here about sign
+      leftSign = getSign(expr.left)
+      rightSign = getSign(expr.right)
+      if rightSign == Sign.zero:
+        print(f"Possible alarm: Division by zero: {expr}")
+        return Sign.zero
+      return Sign.top
 
   print(f"Unimplemented: processArith({expr}) of ty {type(expr)}")
 
@@ -1000,6 +1009,6 @@ def getSign(expr) -> Sign:
 #==================================================================
 def signAnalysis(bv: binaryninja.binaryview.BinaryView,
                  entry: binaryninja.function.Function):
-  #for func in bv.functions:
-  for inst in entry.mlil.instructions:
-    getSign(inst)
+  for func in bv.functions:
+    for inst in entry.mlil.instructions:
+      getSign(inst)
