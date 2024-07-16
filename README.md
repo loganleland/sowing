@@ -14,9 +14,10 @@
 Presently Sowing can be used from the command line by specifying:
 - Analysis to be executed
 - Entry function symbol name
-- Path to binary ninja database (bndb)
+- Input path to binary ninja database or binary
+- Output path where to save annotated binary ninja database
   
-```python3 main.py -sign -entry main -bndb ../sudo.bndb```
+```python3 main.py -sign -entry main -file "/usr/bin/sudo" -out "./result.bndb"```
 
 The bndb specified will contain tags to be reviewed.
 

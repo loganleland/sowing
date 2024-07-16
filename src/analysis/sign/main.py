@@ -1000,6 +1000,6 @@ def getSign(expr) -> Sign:
 #==================================================================
 def signAnalysis(bv: binaryninja.binaryview.BinaryView,
                  entry: binaryninja.function.Function):
-  for func in bv.functions:
-    for inst in entry.mlil.instructions:
-      getSign(inst)
+  #for func in bv.functions:
+  for inst in entry.mlil.instructions:
+    getSign(inst)
