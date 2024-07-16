@@ -2,7 +2,6 @@ import argparse
 import binaryninja
 import sys
 from analysis.sign.main import signAnalysis
-import os
 
 
 if __name__ == '__main__':
