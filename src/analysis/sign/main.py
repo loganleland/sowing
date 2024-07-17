@@ -150,6 +150,57 @@ def processXor(expr: binaryninja.mediumlevelil.MediumLevelILXor) -> Sign:
 
 
 #==================================================================
+# processMul
+#==================================================================
+# Derive sign of binaryninja.mediumlevelil.MediumLevelILMul
+#==================================================================
+def processMul(expr: binaryninja.mediumlevelil.MediumLevelILMul) -> Sign:
+  leftSign = getSign(expr.left)
+  rightSign = getSign(expr.right)
+  match leftSign:
+    case Sign.zero:
+      match rightSign:
+        case Sign.zero:
+          return Sign.zero
+        case Sign.bottom:
+          return Sign.bottom
+        case Sign.pos:
+          return Sign.zero
+        case Sign.neg:
+          return Sign.zero
+        case Sign.top:
+          return Sign.zero
+    case Sign.bottom:
+      return Sign.bottom
+    case Sign.top:
+      return Sign.top  
+    case Sign.neg:
+      match rightSign:
+        case Sign.zero:
+          return Sign.zero
+        case Sign.neg:
+          return Sign.pos
+        case Sign.pos:
+          return Sign.neg
+        case Sign.bottom:
+          return Sign.bottom
+        case Sign.top:
+          return Sign.top
+    case Sign.pos:
+      match rightSign:
+        case Sign.zero:
+          return Sign.zero
+        case Sign.neg:
+          return Sign.neg
+        case Sign.pos:
+          return Sign.pos
+        case Sign.bottom:
+          return Sign.bottom
+        case Sign.top:
+          return Sign.top
+ 
+
+#==================================================================
 # processArith
 #==================================================================
 # Derive sign of binaryninja.commonil.Arithmetic
@@ -201,6 +252,8 @@ def processArith(expr: binaryninja.commonil.Arithmetic):
         print(f"Possible alarm: Division by zero: {expr}")
         return Sign.zero
       return Sign.top
+    case binaryninja.mediumlevelil.MediumLevelILMul:
+      return processMul(expr)
 
   print(f"Unimplemented: processArith({expr}) of ty {type(expr)}")
 
@@ -994,6 +1047,8 @@ def getSign(expr) -> Sign:
     if expr.offset == 0:
       return sign
     return Sign.top
+  elif isinstance(expr, binaryninja.mediumlevelil.MediumLevelILIntrinsic):
+    return Sign.bottom;
   elif isinstance(expr, int):
     return processInt(expr)
   else:
