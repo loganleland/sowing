@@ -198,7 +198,16 @@ def processMul(expr: binaryninja.mediumlevelil.MediumLevelILMul) -> Sign:
           return Sign.bottom
         case Sign.top:
           return Sign.top
- 
+
+
+#==================================================================
+# processAsr
+#==================================================================
+# Derive sign of binaryninja.mediumlevelil.MediumLevelILAsr
+#==================================================================
+def processAsr(expr: binaryninja.mediumlevelil.MediumLevelILAsr) -> Sign:
+  return getSign(expr.left)
+
 
 #==================================================================
 # processArith
@@ -222,6 +231,8 @@ def processArith(expr: binaryninja.commonil.Arithmetic):
     case binaryninja.mediumlevelil.MediumLevelILSx:
       return getSign(expr.src)
     case binaryninja.mediumlevelil.MediumLevelILAdd:
+      return processAddition(expr)
+    case binaryninja.mediumlevelil.MediumLevelILAddOverflow:
       return processAddition(expr)
     case binaryninja.mediumlevelil.MediumLevelILSub:
       return processSubtraction(expr)
@@ -254,6 +265,8 @@ def processArith(expr: binaryninja.commonil.Arithmetic):
       return Sign.top
     case binaryninja.mediumlevelil.MediumLevelILMul:
       return processMul(expr)
+    case binaryninja.mediumlevelil.MediumLevelILAsr:
+      return processAsr(expr)
 
   print(f"Unimplemented: processArith({expr}) of ty {type(expr)}")
 
@@ -1065,5 +1078,7 @@ def getSign(expr) -> Sign:
 def signAnalysis(bv: binaryninja.binaryview.BinaryView,
                  entry: binaryninja.function.Function):
   for func in bv.functions:
+    print(f"FUNCTION: {func.name}")
     for inst in entry.mlil.instructions:
+      print(inst)
       getSign(inst)
