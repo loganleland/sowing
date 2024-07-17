@@ -210,6 +210,26 @@ def processAsr(expr: binaryninja.mediumlevelil.MediumLevelILAsr) -> Sign:
 
 
 #==================================================================
+# processAsr
+#==================================================================
+# Derive sign of binaryninja.mediumlevelil.MediumLevelILAsr
+#==================================================================
+def processNot(expr: binaryninja.mediumlevelil.MediumLevelILNot) -> Sign:
+  sign = getSign(expr.src)
+  match sign:
+    case Sign.zero:
+      return Sign.neg
+    case Sign.neg:
+      return Sign.pos
+    case Sign.pos:
+      return Sign.neg
+    case Sign.bottom:
+      return Sign.bottom
+    case Sign.top:
+      return Sign.top
+
+
+#==================================================================
 # processArith
 #==================================================================
 # Derive sign of binaryninja.commonil.Arithmetic
@@ -267,6 +287,8 @@ def processArith(expr: binaryninja.commonil.Arithmetic):
       return processMul(expr)
     case binaryninja.mediumlevelil.MediumLevelILAsr:
       return processAsr(expr)
+    case binaryninja.mediumlevelil.MediumLevelILNot:
+      return processNot(expr)
 
   print(f"Unimplemented: processArith({expr}) of ty {type(expr)}")
 
@@ -283,6 +305,8 @@ def processConstant(expr: binaryninja.commonil.Constant) -> Sign:
     return Sign.bottom
   elif isinstance(expr, binaryninja.mediumlevelil.MediumLevelILImport):
     return getSign(expr.constant)
+  elif isinstance(expr, binaryninja.mediumlevelil.MediumLevelILConstData):
+    return getSign(expr.constant_data.value)
   else:
     print(f"Unimplemented expression: {expr} of ty: {type(expr)}")
     return None
@@ -1077,8 +1101,5 @@ def getSign(expr) -> Sign:
 #==================================================================
 def signAnalysis(bv: binaryninja.binaryview.BinaryView,
                  entry: binaryninja.function.Function):
-  for func in bv.functions:
-    print(f"FUNCTION: {func.name}")
-    for inst in entry.mlil.instructions:
-      print(inst)
-      getSign(inst)
+  for inst in entry.mlil.instructions:
+    getSign(inst)
