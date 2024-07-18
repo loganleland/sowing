@@ -16,11 +16,13 @@ class Sign(Enum):
 #==================================================================
 # Find and annotate errors
 #==================================================================
-def detection(bv, expr: binaryninja.commonil.Call) -> Sign:
+def detection(bv: binaryninja.binaryview.BinaryView,
+              expr: binaryninja.commonil.Call) -> Sign:
   child = bv.get_function_at(expr.dest.constant)
   match child.name:
     case "malloc":
-      print("MALLOC HIT")
+      sign = getSign(child.parameter_vars[0].name)
+      print(sign)
     case default:
       print(f"OTHER: {child.name}")
 
@@ -1101,6 +1103,10 @@ def getSign(expr) -> Sign:
     return Sign.bottom;
   elif isinstance(expr, int):
     return processInt(expr)
+  elif isinstance(expr, str):
+    if expr in context.keys():
+      return context[expr]
+    return Sign.bottom
   else:
     print(f"getSign unimpl expr: {expr}, ty: {type(expr)}")
 
