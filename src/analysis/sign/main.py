@@ -17,14 +17,26 @@ class Sign(Enum):
 # Find and annotate errors
 #==================================================================
 def detection(bv: binaryninja.binaryview.BinaryView,
-              expr: binaryninja.commonil.Call) -> Sign:
-  child = bv.get_function_at(expr.dest.constant)
-  match child.name:
+              expr: binaryninja.commonil.Call):
+  if isinstance(expr.dest, binaryninja.mediumlevelil.MediumLevelILVar):
+    funcs = bv.get_functions_by_name(expr.dest.var.name)
+    if funcs is None:
+      return
+    if len(funcs) != 1:
+      print(f"Multiple functions found by name: {expr.dest.var.name}")
+      return
+    func = funcs[0]
+  elif isinstance(expr.dest, binaryninja.mediumlevelil.MediumLevelILConstPtr):
+    func = bv.get_function_at(expr.dest.constant)
+    if func is None:
+      print(f"No function found at {expr.dest.constant}")
+      return
+  match func.name:
     case "malloc":
-      sign = getSign(child.parameter_vars[0].name)
+      sign = getSign(func.parameter_vars[0].name)
       print(sign)
     case default:
-      print(f"OTHER: {child.name}")
+      return
 
 #==================================================================
 # processVar
@@ -336,7 +348,6 @@ def processInt(expr: int) -> Sign:
   if expr == 0: return Sign.zero
   if expr > 0: return Sign.pos
   return Sign.neg
-
 
 
 #==================================================================
