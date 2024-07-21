@@ -8,7 +8,7 @@
 
 | Analysis | Maturity | Path |
 | -------- | -------- | -------- |
-| Sign     | Initial  | [Implementation](https://github.com/loganleland/sowing/blob/main/src/analysis/sign/main.py) |
+| Sign     | Initial  | src/analysis/sign |
 
 # Usage
 Presently Sowing can be used from the command line by specifying:
