@@ -13,11 +13,11 @@ class Sign(Enum):
 
 
 #==================================================================
-# detection
+# detectionMem
 #==================================================================
-# Find and annotate errors
+# Find and annotate memory errors
 #==================================================================
-def detection(bv: binaryninja.binaryview.BinaryView,
+def detectionMem(bv: binaryninja.binaryview.BinaryView,
               expr: binaryninja.commonil.Call):
   if isinstance(expr.dest, binaryninja.mediumlevelil.MediumLevelILVar):
     funcs = bv.get_functions_by_name(expr.dest.var.name)
@@ -36,7 +36,26 @@ def detection(bv: binaryninja.binaryview.BinaryView,
     case "malloc":
       sign = getSign(expr.params[0].src.name)
       if sign is Sign.neg or sign is Sign.zero:
-        print(f"Alarm: malloc with {sign} input.")
+        print(f"Alarm: malloc with {sign} size input.")
+    case "calloc":
+      sign = getSign(expr.params[1].src.name)
+      if sign is Sign.neg or sign is Sign.zero:
+        print(f"Alarm: calloc with {sign} size input.")
+    case "aligned_alloc":
+      signAlignment = getsign(expr.params[0].src.name)
+      signSize = getsign(expr.params[1].src.name)
+      if signSize is Sign.neg or signSize is Sign.zero:
+        print(f"Alarm: aligned_alloc with {sign} size input.")
+      if signAlignment is Sign.neg or signSize is Sign.zero:
+        print(f"Alarm: aligned_alloc with {sign} alignment input.")
+    case "realloc":
+      sign = getSign(expr.params[1].src.name)
+      if sign is Sign.neg or sign is Sign.zero:
+        print(f"Alarm: realloc with {sign} new size input.")
+    case "free_sized":
+      sign = getSign(expr.params[1].src.name)
+      if sign is Sign.neg or sign is Sign.zero:
+        print(f"Alarm: free_sized with {sign} new size input.")
     case default:
       return
 
@@ -1138,6 +1157,6 @@ def signAnalysis(bv: binaryninja.binaryview.BinaryView,
                  entry: binaryninja.function.Function):
   for inst in entry.mlil.instructions:
     if isinstance(inst, binaryninja.commonil.Call):
-      detection(bv, inst)
+      detectionMem(bv, inst)
     else:
       getSign(inst)
