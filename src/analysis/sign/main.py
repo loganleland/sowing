@@ -34,26 +34,26 @@ def detectionMem(bv: binaryninja.binaryview.BinaryView,
       return
   match func.name:
     case "malloc":
-      sign = getSign(expr.params[0].src.name)
+      sign = getSign(expr.params[0])
       if sign is Sign.neg or sign is Sign.zero:
         print(f"Alarm: malloc with {sign} size input.")
     case "calloc":
-      sign = getSign(expr.params[1].src.name)
+      sign = getSign(expr.params[1])
       if sign is Sign.neg or sign is Sign.zero:
         print(f"Alarm: calloc with {sign} size input.")
     case "aligned_alloc":
-      signAlignment = getsign(expr.params[0].src.name)
-      signSize = getsign(expr.params[1].src.name)
+      signAlignment = getsign(expr.params[0])
+      signSize = getsign(expr.params[1])
       if signSize is Sign.neg or signSize is Sign.zero:
         print(f"Alarm: aligned_alloc with {sign} size input.")
       if signAlignment is Sign.neg or signSize is Sign.zero:
         print(f"Alarm: aligned_alloc with {sign} alignment input.")
     case "realloc":
-      sign = getSign(expr.params[1].src.name)
+      sign = getSign(expr.params[1])
       if sign is Sign.neg or sign is Sign.zero:
         print(f"Alarm: realloc with {sign} new size input.")
     case "free_sized":
-      sign = getSign(expr.params[1].src.name)
+      sign = getSign(expr.params[1])
       if sign is Sign.neg or sign is Sign.zero:
         print(f"Alarm: free_sized with {sign} new size input.")
     case default:
