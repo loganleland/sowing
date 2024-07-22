@@ -3,6 +3,7 @@ from enum import Enum
 
 context = dict()
 
+# Abstract domain
 class Sign(Enum):
   top = 1
   neg = 2 
@@ -29,14 +30,16 @@ def detection(bv: binaryninja.binaryview.BinaryView,
   elif isinstance(expr.dest, binaryninja.mediumlevelil.MediumLevelILConstPtr):
     func = bv.get_function_at(expr.dest.constant)
     if func is None:
-      print(f"No function found at {expr.dest.constant}")
+      print(f"TODO: No ConstPtr function found at {expr.dest.constant}")
       return
   match func.name:
     case "malloc":
-      sign = getSign(func.parameter_vars[0].name)
-      print(sign)
+      sign = getSign(expr.params[0].src.name)
+      if sign is Sign.neg or sign is Sign.zero:
+        print(f"Alarm: malloc with {sign} input.")
     case default:
       return
+
 
 #==================================================================
 # processVar
@@ -311,6 +314,8 @@ def processArith(expr: binaryninja.commonil.Arithmetic):
         return Sign.zero
       return Sign.top
     case binaryninja.mediumlevelil.MediumLevelILMul:
+      return processMul(expr)
+    case binaryninja.mediumlevelil.MediumLevelILMulsDp:
       return processMul(expr)
     case binaryninja.mediumlevelil.MediumLevelILAsr:
       return processAsr(expr)
