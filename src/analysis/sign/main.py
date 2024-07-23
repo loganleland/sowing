@@ -126,6 +126,14 @@ def detectionCPPContainer(bv: binaryninja.binaryview.BinaryView,
       sign = getSign(expr.params[1])
       if sign is Sign.neg:
         print(f"Alarm: vector resize with {sign} size input.")
+    case "_ZNSt6vectorIi6NAllocIiEE7reserveEm":
+      sign = getSign(expr.params[1])
+      if sign is Sign.neg or sign is Sign.zero:
+        print(f"Alarm: vector reserve with {sign} size input.")
+    case "_ZNSt5dequeIiSaIiEE6resizeEm":
+      sign = getSign(expr.params[1])
+      if sign is Sign.neg or sign is Sign.zero:
+        print(f"Alarm: deque reserve with {sign} size input.")
     case default:
       return
 
