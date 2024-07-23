@@ -133,7 +133,11 @@ def detectionCPPContainer(bv: binaryninja.binaryview.BinaryView,
     case "_ZNSt5dequeIiSaIiEE6resizeEm":
       sign = getSign(expr.params[1])
       if sign is Sign.neg or sign is Sign.zero:
-        print(f"Alarm: deque reserve with {sign} size input.")
+        print(f"Alarm: deque resize with {sign} size input.")
+    case "_ZNSt12forward_listIiSaIiEE6resizeEm":
+      sign = getSign(expr.params[1])
+      if sign is Sign.neg or sign is Sign.zero:
+        print(f"Alarm: forward list resize with {sign} size input.")
     case default:
       return
 
