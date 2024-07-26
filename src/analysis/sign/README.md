@@ -37,7 +37,7 @@ The following memory alarms are implemented:
   - with 0 or <0 input
 
 ### String
-- ```char* strncpy( char * destination, const char * source, size_t num)```:
+- ```char* strncpy(char * destination, const char * source, size_t num)```:
   - num is 0 or <0 size parameter
 - ```char* strncat(char* dest, const char* src, std::size_t count)```:
   - count is 0 or <0
@@ -49,5 +49,9 @@ The following memory alarms are implemented:
 ### C++ Container
 - ```void vector::resize(size_type count)```
   - count is <0
-- ```void vector::reserve( size_type new_cap)```
-  - new_cap is 0 or <0 
+- ```void vector::reserve(size_type new_cap)```
+  - new_cap is 0 or <0
+- ```void deque::resize(size_type count)```
+  - count is 0 or <0
+- ```void forward_list::resize(size_type count)```
+  - count is 0 or <0 
