@@ -19,7 +19,9 @@ Presently Sowing can be used from the command line by specifying:
   
 ```python3 main.py -sign -entry main -file "/usr/bin/sudo" -out "./result.bndb"```
 
-The bndb specified will contain tags to be reviewed.
+**TODO**
+If a binary is selected a binary ninja database will be created with annotations created by alarms from the selected analysis.
+Otherwise the binary ninja database will be annotated in-place by the selected analysis passes.
 
 # Installation
 Simply have the binary ninja api in your path (execute [install_api.py](https://github.com/Vector35/binaryninja-api/blob/dev/scripts/install_api.py) and clone this repo.
