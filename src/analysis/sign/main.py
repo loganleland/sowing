@@ -1,5 +1,6 @@
 import binaryninja
 from enum import Enum
+from analysis.sign.detection import detection
 
 context = dict()
 
@@ -10,136 +11,6 @@ class Sign(Enum):
   zero = 3
   pos = 4
   bottom = 5
-
-
-#==================================================================
-# detectionMem
-#==================================================================
-# Find and annotate memory errors
-#==================================================================
-def detectionMem(bv: binaryninja.binaryview.BinaryView,
-              expr: binaryninja.commonil.Call):
-  if isinstance(expr.dest, binaryninja.mediumlevelil.MediumLevelILVar):
-    funcs = bv.get_functions_by_name(expr.dest.var.name)
-    if funcs is None:
-      return
-    if len(funcs) != 1:
-      print(f"Multiple functions found by name: {expr.dest.var.name}")
-      return
-    func = funcs[0]
-  elif isinstance(expr.dest, binaryninja.mediumlevelil.MediumLevelILConstPtr):
-    func = bv.get_function_at(expr.dest.constant)
-    if func is None:
-      print(f"TODO: No ConstPtr function found at {expr.dest.constant}")
-      return
-  match func.name:
-    case "malloc":
-      sign = getSign(expr.params[0])
-      if sign is Sign.neg or sign is Sign.zero:
-        print(f"Alarm: malloc with {sign} size input.")
-    case "calloc":
-      sign = getSign(expr.params[1])
-      if sign is Sign.neg or sign is Sign.zero:
-        print(f"Alarm: calloc with {sign} size input.")
-    case "aligned_alloc":
-      signAlignment = getsign(expr.params[0])
-      signSize = getsign(expr.params[1])
-      if signSize is Sign.neg or signSize is Sign.zero:
-        print(f"Alarm: aligned_alloc with {sign} size input.")
-      if signAlignment is Sign.neg or signSize is Sign.zero:
-        print(f"Alarm: aligned_alloc with {sign} alignment input.")
-    case "realloc":
-      sign = getSign(expr.params[1])
-      if sign is Sign.neg or sign is Sign.zero:
-        print(f"Alarm: realloc with {sign} new size input.")
-    case "free_sized":
-      sign = getSign(expr.params[1])
-      if sign is Sign.neg or sign is Sign.zero:
-        print(f"Alarm: free_sized with {sign} new size input.")
-    case default:
-      return
-
-
-#==================================================================
-# detectionString
-#==================================================================
-# Find and annotate common string function errors
-#==================================================================
-def detectionString(bv: binaryninja.binaryview.BinaryView,
-                    expr: binaryninja.commonil.Call):
-  if isinstance(expr.dest, binaryninja.mediumlevelil.MediumLevelILVar):
-    funcs = bv.get_functions_by_name(expr.dest.var.name)
-    if funcs is None:
-      return
-    if len(funcs) != 1:
-      print(f"Multiple functions found by name: {expr.dest.var.name}")
-      return
-    func = funcs[0]
-  elif isinstance(expr.dest, binaryninja.mediumlevelil.MediumLevelILConstPtr):
-    func = bv.get_function_at(expr.dest.constant)
-    if func is None:
-      print(f"TODO: No ConstPtr function found at {expr.dest.constant}")
-      return
-  match func.name:
-    case "strncpy":
-      sign = getSign(expr.params[2])
-      if sign is Sign.neg or sign is Sign.zero:
-        print(f"Alarm: strncpy with {sign} size input.")
-    case "strncat":
-      sign = getSign(expr.params[2])
-      if sign is Sign.neg or sign is Sign.zero:
-        print(f"Alarm: strncat with {sign} size input.")
-    case "strncmp":
-      sign = getSign(expr.params[2])
-      if sign is Sign.neg or sign is Sign.zero:
-        print(f"Alarm: strncmp with {sign} size input.")
-    case "wcsncmp":
-      sign = getSign(expr.params[2])
-      if sign is Sign.neg or sign is Sign.zero:
-        print(f"Alarm: wcsncmp with {sign} size input.")
-    case default:
-      return
-
-
-#==================================================================
-# detectionCPPContainer
-#==================================================================
-# Find and annotate common cpp container errors
-#==================================================================
-def detectionCPPContainer(bv: binaryninja.binaryview.BinaryView,
-                          expr: binaryninja.commonil.Call):
-  if isinstance(expr.dest, binaryninja.mediumlevelil.MediumLevelILVar):
-    funcs = bv.get_functions_by_name(expr.dest.var.name)
-    if funcs is None:
-      return
-    if len(funcs) != 1:
-      print(f"Multiple functions found by name: {expr.dest.var.name}")
-      return
-    func = funcs[0]
-  elif isinstance(expr.dest, binaryninja.mediumlevelil.MediumLevelILConstPtr):
-    func = bv.get_function_at(expr.dest.constant)
-    if func is None:
-      print(f"TODO: No ConstPtr function found at {expr.dest.constant}")
-      return
-  match func.name:
-    case "_ZNSt6vectorIiSaIiEE6resizeEm":
-      sign = getSign(expr.params[1])
-      if sign is Sign.neg:
-        print(f"Alarm: vector resize with {sign} size input.")
-    case "_ZNSt6vectorIi6NAllocIiEE7reserveEm":
-      sign = getSign(expr.params[1])
-      if sign is Sign.neg or sign is Sign.zero:
-        print(f"Alarm: vector reserve with {sign} size input.")
-    case "_ZNSt5dequeIiSaIiEE6resizeEm":
-      sign = getSign(expr.params[1])
-      if sign is Sign.neg or sign is Sign.zero:
-        print(f"Alarm: deque resize with {sign} size input.")
-    case "_ZNSt12forward_listIiSaIiEE6resizeEm":
-      sign = getSign(expr.params[1])
-      if sign is Sign.neg or sign is Sign.zero:
-        print(f"Alarm: forward list resize with {sign} size input.")
-    case default:
-      return
 
 
 #==================================================================
@@ -1239,8 +1110,6 @@ def signAnalysis(bv: binaryninja.binaryview.BinaryView,
                  entry: binaryninja.function.Function):
   for inst in entry.mlil.instructions:
     if isinstance(inst, binaryninja.commonil.Call):
-      detectionMem(bv, inst)
-      detectionString(bv, inst)
-      detectionCPPContainer(bv, inst)
+      detection(bv, inst)
     else:
       getSign(inst)
