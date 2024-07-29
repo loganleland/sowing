@@ -6,9 +6,9 @@
 
 **Sowing** is a suite of tools dedicated to the analysis of any loader and architecture supported by [Binary Ninja](https://binary.ninja/). Currently all analysis operates over [Medium Level IL](https://docs.binary.ninja/dev/bnil-mlil.html).
 
-| Analysis | Maturity | Path |
-| -------- | -------- | -------- |
-| Sign     | Initial  | src/analysis/sign |
+| Analysis | Maturity | Path | Tag 
+| -------- | -------- | -------- | -------- |
+| Sign     | Initial  | src/analysis/sign | ```+``` Sign Analysis
 
 # Usage
 Presently Sowing can be used from the command line by specifying:
@@ -19,9 +19,11 @@ Presently Sowing can be used from the command line by specifying:
   
 ```python3 main.py -sign -entry main -file "/usr/bin/sudo" -out "./result.bndb"```
 
-**TODO**
 If a binary is selected a binary ninja database will be created with annotations created by alarms from the selected analysis.
 Otherwise the binary ninja database will be annotated in-place by the selected analysis passes.
+
+## Fixups
+If a symbol being considered by an analysis has incorrect function argument recovery the calls to the symbol will be marked with the tag "🔨 Fixup" including a detailed comment on the expected arguments.
 
 # Installation
 Simply have the binary ninja api in your path (execute [install_api.py](https://github.com/Vector35/binaryninja-api/blob/dev/scripts/install_api.py) and clone this repo.
