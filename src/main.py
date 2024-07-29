@@ -31,12 +31,14 @@ if __name__ == '__main__':
     print("  [+] No entry symbol detected")
     sys.exit(-1)
   if len(syms) != 1:
-    print("  [+] Not unique")
+    print("  [+] Not unique symbol name, provide address (not supported yet)")
     sys.exit(-1)
   print(syms[0])
   entry = syms[0]
 
   if args.sign is not None:
+    bv.create_tag_type("Sign Analysis", "+")
+    bv.create_tag_type("Fixup", "🔨")
     print("[*] Executing sign analysis")
     signAnalysis(bv, entry)
 
