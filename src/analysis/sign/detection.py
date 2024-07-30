@@ -1,9 +1,10 @@
 import binaryninja
 import importlib
-
+from typing import Optional
 
 # Dynamic import of sign module
 signModule = importlib.import_module("analysis.sign.main")
+signTag = "Sign Analysis"
 
 
 #==================================================================
@@ -17,7 +18,24 @@ def detection(bv: binaryninja.binaryview.BinaryView,
   detectionString(bv, expr)
   detectionCPPContainer(bv, expr) 
 
- 
+
+#==================================================================
+# justSign
+#==================================================================
+# Given a binja call expr and desired argument index return the
+# Sign of argument on inspection or None
+#
+# If desired argument is out of range add a fixup tag
+#==================================================================
+def justSign(bv: binaryninja.binaryview.BinaryView, expr: binaryninja.commonil.Call,
+             paramIndex: int):
+  if len(expr.params)-1 < paramIndex:
+    print(f"expr: {expr}, paramIndex: {paramIndex}")
+    bv.add_tag(expr.address, "Fixup", f"Expected minimum {paramIndex} arguments")
+    return None
+  return signModule.getSign(expr.params[paramIndex])
+
+
 #==================================================================
 # detectionMem
 #==================================================================
@@ -40,29 +58,41 @@ def detectionMem(bv: binaryninja.binaryview.BinaryView,
       return
   match func.name:
     case "malloc":
-      sign = signModule.getSign(expr.params[0])
-      if sign is signModule.Sign.neg or sign is signModule.Sign.zero:
-        bv.add_tag(expr.address, "Malloc", f"Malloc({sign})")
-        print(f"Alarm: malloc with {sign} size input.")
+      signArg0 = justSign(bv, expr, 0)
+      if signArg0 is None:
+        return
+      if signArg0 is signModule.Sign.neg or signArg0 is signModule.Sign.zero:
+        bv.add_tag(expr.address, signTag, f"Malloc({signArg0})")
     case "calloc":
-      sign = signModule.getSign(expr.params[1])
-      if sign is signModule.Sign.neg or sign is signModule.Sign.zero:
-        print(f"Alarm: calloc with {sign} size input.")
+      signArg0 = justSign(bv, expr, 0)
+      signArg1 = justSign(bv, expr, 1)
+      if signArg0 is None or signArg1 is None:
+        return
+      if signArg0 is signModule.Sign.neg or signArg0 is signModule.Sign.zero:
+        bv.add_tag(expr.address, signTag, f"calloc({signArg0})")
+      if signArg1 is signModule.Sign.neg or signArg1 is signModule.Sign.zero:
+        bv.add_tag(expr.address, signTag, f"calloc({signArg1})")
     case "aligned_alloc":
-      signAlignment = signModule.getSign(expr.params[0])
-      signSize = signModule.getsign(expr.params[1])
-      if signSize is signModule.Sign.neg or signSize is signModule.Sign.zero:
-        print(f"Alarm: aligned_alloc with {sign} size input.")
-      if signAlignment is signModule.Sign.neg or signSize is signModule.Sign.zero:
-        print(f"Alarm: aligned_alloc with {sign} alignment input.")
+      signArg0 = justSign(bv, expr, 0)
+      signArg1 = justSign(bv, expr, 1)
+      if signArg0 is None or signArg1 is None:
+        return
+      if signArg0 is signModule.Sign.neg or signArg0 is signModule.Sign.zero:
+        bv.add_tag(expr.address, signTag, f"aligned_alloc(alignment:= {signArg0})")
+      if signArg1 is signModule.Sign.neg or signArg1 is signModule.Sign.zero:
+        bv.add_tag(expr.address, signTag, f"aligned_alloc(size:= {signArg1})")
     case "realloc":
-      sign = signModule.getSign(expr.params[1])
-      if sign is signModule.Sign.neg or sign is signModule.Sign.zero:
-        print(f"Alarm: realloc with {sign} new size input.")
+      signArg1 = justSign(bv, expr, 1)
+      if signArg1 is None:
+        return
+      if signArg1 is signModule.Sign.neg or signArg1 is signModule.Sign.zero:
+        bv.add_tag(expr.address, signTag, f"realloc(new_size:= {signArg1})")
     case "free_sized":
-      sign = signModule.getSign(expr.params[1])
-      if sign is signModule.Sign.neg or sign is signModule.Sign.zero:
-        print(f"Alarm: free_sized with {sign} new size input.")
+      signArg1 = justSign(bv, expr, 1)
+      if signArg1 is None:
+        return
+      if signArg1 is signModule.Sign.neg or signArg1 is signModule.Sign.zero:
+        bv.add_tag(expr.address, signTag, f"free_sized(new_size:= {signArg1})")
     case default:
       return
 
@@ -87,23 +117,22 @@ def detectionString(bv: binaryninja.binaryview.BinaryView,
     if func is None:
       print(f"TODO: No ConstPtr function found at {expr.dest.constant}")
       return
+  sign = justSign(bv, expr, 2)
+  if sign is None:
+    return
   match func.name:
     case "strncpy":
-      sign = signModule.getSign(expr.params[2])
       if sign is signModule.Sign.neg or sign is signModule.Sign.zero:
-        print(f"Alarm: strncpy with {sign} size input.")
+        bv.add_tag(expr.address, signTag, f"strncpy(n := {sign})")
     case "strncat":
-      sign = signModule.getSign(expr.params[2])
       if sign is signModule.Sign.neg or sign is signModule.Sign.zero:
-        print(f"Alarm: strncat with {sign} size input.")
+        bv.add_tag(expr.address, signTag, f"strncat(n := {sign})")
     case "strncmp":
-      sign = signModule.getSign(expr.params[2])
       if sign is signModule.Sign.neg or sign is signModule.Sign.zero:
-        print(f"Alarm: strncmp with {sign} size input.")
+        bv.add_tag(expr.address, signTag, f"strncmp(n := {sign})")
     case "wcsncmp":
-      sign = signModule.getSign(expr.params[2])
       if sign is signModule.Sign.neg or sign is signModule.Sign.zero:
-        print(f"Alarm: wcsncmp with {sign} size input.")
+        bv.add_tag(expr.address, signTag, f"wcsncmp(count := {sign})")
     case default:
       return
 
@@ -128,31 +157,21 @@ def detectionCPPContainer(bv: binaryninja.binaryview.BinaryView,
     if func is None:
       print(f"TODO: No ConstPtr function found at {expr.dest.constant}")
       return
+  signArg1 = justSign(bv, expr, 1)
+  if signArg1 is None:
+    return
   match func.name:
     case "_ZNSt6vectorIiSaIiEE6resizeEm":
-      sign = signModule.getSign(expr.params[1])
-      if sign is signModule.Sign.neg:
-        print(f"Alarm: vector resize with {sign} size input.")
+      if signArg1 is signModule.Sign.neg:
+        bv.add_tag(expr.address, signTag, f"vector::resize(n := {signArg1})")
     case "_ZNSt6vectorIi6NAllocIiEE7reserveEm":
-      sign = signModule.getSign(expr.params[1])
-      if sign is signModule.Sign.neg or sign is signModule.Sign.zero:
-        print(f"Alarm: vector reserve with {sign} size input.")
+      if signArg1 is signModule.Sign.neg or signArg1 is signModule.Sign.zero:
+        bv.add_tag(expr.address, signTag, f"vector::reserve(n := {signArg1})")
     case "_ZNSt5dequeIiSaIiEE6resizeEm":
-      if len(expr.params) < 2:
-        print(f"Non-standard amount of function arguments. Manual inspection required.")
-        bv.add_tag(expr.address, "Fixup", "Expected: Two arguments, this pointer and size_t count")
-        return
-      sign = signModule.getSign(expr.params[1])
-      if sign is signModule.Sign.neg or sign is signModule.Sign.zero:
-        print(f"Alarm: deque resize with {sign} size input.")
+      if signArg1 is signModule.Sign.neg or signArg1 is signModule.Sign.zero:
+        bv.add_tag(expr.address, signTag, f"deque::resize(count := {signArg1})")
     case "_ZNSt12forward_listIiSaIiEE6resizeEm":
-      if len(expr.params) < 2:
-        print(f"Non-standard amount of function arguments. Manual inspection required.")
-        bv.add_tag(expr.address, "Fixup", "Expected: Two arguments, this pointer and size_t count")
-        return
-      sign = signModule.getSign(expr.params[1])
-      if sign is signModule.Sign.neg or sign is signModule.Sign.zero:
-        print(f"Alarm: forward list resize with {sign} size input.")
+      if signArg1 is signModule.Sign.neg or signArg1 is signModule.Sign.zero:
+        bv.add_tag(expr.address, signTag, f"forward_list::resize(count := {signArg1})")
     case default:
-      print(expr)
       return

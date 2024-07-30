@@ -55,6 +55,8 @@ def processAnd(expr: binaryninja.mediumlevelil.MediumLevelILAnd) -> Sign:
   rightSign = getSign(expr.right)
   if leftSign == Sign.zero or rightSign == Sign.zero:
     return Sign.zero
+  if leftSign == Sign.bottom:
+    bv.add_tag(expr.address, "Sign", f"Malloc({sign})")
   return Sign.top
 
 
