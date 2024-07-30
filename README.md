@@ -18,6 +18,7 @@ Sowing can be used from the command line by specifying:
 - Output path where to save annotated binary ninja database
   
 ```python3 main.py -sign -entry main -file "/usr/bin/sudo" -out "./result.bndb"```
+
 Analysis starting at symbol main in file /usr/bin/sudo with results in new binja database results.bndb
 
 ## Fixups
