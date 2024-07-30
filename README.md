@@ -11,16 +11,14 @@
 | Sign     | Initial  | src/analysis/sign | ```+``` Sign Analysis
 
 # Usage
-Presently Sowing can be used from the command line by specifying:
+Sowing can be used from the command line by specifying:
 - Analysis to be executed
 - Entry function symbol name
 - Input path to binary ninja database or binary
 - Output path where to save annotated binary ninja database
   
 ```python3 main.py -sign -entry main -file "/usr/bin/sudo" -out "./result.bndb"```
-
-If a binary is selected a binary ninja database will be created with annotations created by alarms from the selected analysis.
-Otherwise the binary ninja database will be annotated in-place by the selected analysis passes.
+Analysis starting at symbol main in file /usr/bin/sudo with results in new binja database results.bndb
 
 ## Fixups
 If a symbol being considered by an analysis has incorrect function argument recovery the calls to the symbol will be marked with the tag "🔨 Fixup" including a detailed comment on the expected arguments.
