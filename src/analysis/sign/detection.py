@@ -37,25 +37,41 @@ def justSign(bv: binaryninja.binaryview.BinaryView, expr: binaryninja.commonil.C
 
 
 #==================================================================
+# prologue
+#==================================================================
+# Common prologue for detection functions
+#==================================================================
+def prologue(bv: binaryninja.binaryview.BinaryView,
+             expr: binaryninja.commonil.Call):
+  if isinstance(expr.dest, binaryninja.mediumlevelil.MediumLevelILVar):
+    funcs = bv.get_functions_by_name(expr.dest.var.name)
+    if funcs is None:
+      return None
+    if len(funcs) != 1:
+      print(f"Multiple functions found by name: {expr.dest.var.name}")
+      return None
+    return funcs[0]
+  elif isinstance(expr.dest, binaryninja.mediumlevelil.MediumLevelILConstPtr):
+    func = bv.get_function_at(expr.dest.constant)
+    if func is None:
+      print(f"TODO: No ConstPtr function found at {expr.dest.constant}")
+      return None
+    return func
+  elif isinstance(expr.dest, binaryninja.mediumlevelil.MediumLevelILImport):
+    return None
+
+ 
+#==================================================================
 # detectionMem
 #==================================================================
 # Find and annotate memory errors
 #==================================================================
 def detectionMem(bv: binaryninja.binaryview.BinaryView,
               expr: binaryninja.commonil.Call):
-  if isinstance(expr.dest, binaryninja.mediumlevelil.MediumLevelILVar):
-    funcs = bv.get_functions_by_name(expr.dest.var.name)
-    if funcs is None:
-      return
-    if len(funcs) != 1:
-      print(f"Multiple functions found by name: {expr.dest.var.name}")
-      return
-    func = funcs[0]
-  elif isinstance(expr.dest, binaryninja.mediumlevelil.MediumLevelILConstPtr):
-    func = bv.get_function_at(expr.dest.constant)
-    if func is None:
-      print(f"TODO: No ConstPtr function found at {expr.dest.constant}")
-      return
+  func = prologue(bv, expr)
+  if func is None:
+    return
+
   match func.name:
     case "malloc":
       signArg0 = justSign(bv, expr, 0)
@@ -104,19 +120,10 @@ def detectionMem(bv: binaryninja.binaryview.BinaryView,
 #==================================================================
 def detectionString(bv: binaryninja.binaryview.BinaryView,
                     expr: binaryninja.commonil.Call):
-  if isinstance(expr.dest, binaryninja.mediumlevelil.MediumLevelILVar):
-    funcs = bv.get_functions_by_name(expr.dest.var.name)
-    if funcs is None:
-      return
-    if len(funcs) != 1:
-      print(f"Multiple functions found by name: {expr.dest.var.name}")
-      return
-    func = funcs[0]
-  elif isinstance(expr.dest, binaryninja.mediumlevelil.MediumLevelILConstPtr):
-    func = bv.get_function_at(expr.dest.constant)
-    if func is None:
-      print(f"TODO: No ConstPtr function found at {expr.dest.constant}")
-      return
+  func = prologue(bv, expr)
+  if func is None:
+    return
+
   match func.name:
     case "strncpy":
       sign = justSign(bv, expr, 2)
@@ -153,19 +160,10 @@ def detectionString(bv: binaryninja.binaryview.BinaryView,
 #==================================================================
 def detectionCPPContainer(bv: binaryninja.binaryview.BinaryView,
                           expr: binaryninja.commonil.Call):
-  if isinstance(expr.dest, binaryninja.mediumlevelil.MediumLevelILVar):
-    funcs = bv.get_functions_by_name(expr.dest.var.name)
-    if funcs is None:
-      return
-    if len(funcs) != 1:
-      print(f"Multiple functions found by name: {expr.dest.var.name}")
-      return
-    func = funcs[0]
-  elif isinstance(expr.dest, binaryninja.mediumlevelil.MediumLevelILConstPtr):
-    func = bv.get_function_at(expr.dest.constant)
-    if func is None:
-      print(f"TODO: No ConstPtr function found at {expr.dest.constant}")
-      return
+  func = prologue(bv, expr)
+  if func is None:
+    return
+
   match func.name:
     case "_ZNSt6vectorIiSaIiEE6resizeEm":
       signArg1 = justSign(bv, expr, 1)
