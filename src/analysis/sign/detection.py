@@ -78,37 +78,37 @@ def detectionMem(bv: binaryninja.binaryview.BinaryView,
       if signArg0 is None:
         return
       if signArg0 is signModule.Sign.neg or signArg0 is signModule.Sign.zero:
-        bv.add_tag(expr.address, signTag, f"Malloc({signArg0})")
+        bv.add_tag(expr.address, signTag, f"malloc(size := {signArg0})")
     case "calloc":
       signArg0 = justSign(bv, expr, 0)
       signArg1 = justSign(bv, expr, 1)
       if signArg0 is None or signArg1 is None:
         return
       if signArg0 is signModule.Sign.neg or signArg0 is signModule.Sign.zero:
-        bv.add_tag(expr.address, signTag, f"calloc({signArg0})")
+        bv.add_tag(expr.address, signTag, f"calloc(num := {signArg0})")
       if signArg1 is signModule.Sign.neg or signArg1 is signModule.Sign.zero:
-        bv.add_tag(expr.address, signTag, f"calloc({signArg1})")
+        bv.add_tag(expr.address, signTag, f"calloc(size := {signArg1})")
     case "aligned_alloc":
       signArg0 = justSign(bv, expr, 0)
       signArg1 = justSign(bv, expr, 1)
       if signArg0 is None or signArg1 is None:
         return
       if signArg0 is signModule.Sign.neg or signArg0 is signModule.Sign.zero:
-        bv.add_tag(expr.address, signTag, f"aligned_alloc(alignment:= {signArg0})")
+        bv.add_tag(expr.address, signTag, f"aligned_alloc(alignment := {signArg0})")
       if signArg1 is signModule.Sign.neg or signArg1 is signModule.Sign.zero:
-        bv.add_tag(expr.address, signTag, f"aligned_alloc(size:= {signArg1})")
+        bv.add_tag(expr.address, signTag, f"aligned_alloc(size := {signArg1})")
     case "realloc":
       signArg1 = justSign(bv, expr, 1)
       if signArg1 is None:
         return
       if signArg1 is signModule.Sign.neg or signArg1 is signModule.Sign.zero:
-        bv.add_tag(expr.address, signTag, f"realloc(new_size:= {signArg1})")
+        bv.add_tag(expr.address, signTag, f"realloc(new_size := {signArg1})")
     case "free_sized":
       signArg1 = justSign(bv, expr, 1)
       if signArg1 is None:
         return
       if signArg1 is signModule.Sign.neg or signArg1 is signModule.Sign.zero:
-        bv.add_tag(expr.address, signTag, f"free_sized(new_size:= {signArg1})")
+        bv.add_tag(expr.address, signTag, f"free_sized(new_size := {signArg1})")
     case default:
       return
 
