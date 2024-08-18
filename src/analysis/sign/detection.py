@@ -30,7 +30,6 @@ def detection(bv: binaryninja.binaryview.BinaryView,
 def justSign(bv: binaryninja.binaryview.BinaryView, expr: binaryninja.commonil.Call,
              paramIndex: int):
   if len(expr.params) < paramIndex+1:
-    print(f"expr: {expr}, {len(expr.params)}, paramIndex: {paramIndex}")
     bv.add_tag(expr.address, "Fixup", f"Expected minimum {paramIndex} arguments")
     return None
   return signModule.getSign(expr.params[paramIndex])

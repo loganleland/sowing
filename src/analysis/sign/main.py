@@ -1046,6 +1046,9 @@ def processComparison(expr: binaryninja.commonil.Comparison) -> Sign:
 # processCall
 #==================================================================
 # Derive sign of binaryninja.commonil.Call
+#
+# Introduce named function arguments into context while processing
+# the function call
 #==================================================================
 def processCall(expr: binaryninja.commonil.Call) -> Sign:
   # Setup function-specific context
@@ -1062,13 +1065,12 @@ def processCall(expr: binaryninja.commonil.Call) -> Sign:
         return
       for arg in list(zip(callTo.parameter_vars, argSigns)):
         context[arg[0].name] = arg[1]
-      print(context)
       for inst in callTo.mlil.instructions:
         getSign(inst)
         if isinstance(inst, binaryninja.commonil.Call):
           detection(view, inst)
     case binaryninja.mediumlevelil.MediumLevelILImport:
-      print(f"import unimplemented: {type(expr.dest)}")
+      return
     case default:
       print(f"Unimplemented expression of type {type(expr)}")
   context = prevContext
