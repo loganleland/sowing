@@ -2,8 +2,6 @@ import binaryninja
 from enum import Enum
 from analysis.sign.detection import detection
 
-context = dict()
-
 # Abstract domain
 class Sign(Enum):
   top = 1
@@ -55,8 +53,6 @@ def processAnd(expr: binaryninja.mediumlevelil.MediumLevelILAnd) -> Sign:
   rightSign = getSign(expr.right)
   if leftSign == Sign.zero or rightSign == Sign.zero:
     return Sign.zero
-  if leftSign == Sign.bottom:
-    bv.add_tag(expr.address, "Sign", f"Malloc({sign})")
   return Sign.top
 
 
@@ -214,9 +210,9 @@ def processAsr(expr: binaryninja.mediumlevelil.MediumLevelILAsr) -> Sign:
 
 
 #==================================================================
-# processAsr
+# processNot
 #==================================================================
-# Derive sign of binaryninja.mediumlevelil.MediumLevelILAsr
+# Derive sign of binaryninja.mediumlevelil.MediumLevelILNot
 #==================================================================
 def processNot(expr: binaryninja.mediumlevelil.MediumLevelILNot) -> Sign:
   sign = getSign(expr.src)
@@ -284,7 +280,7 @@ def processArith(expr: binaryninja.commonil.Arithmetic):
       leftSign = getSign(expr.left)
       rightSign = getSign(expr.right)
       if rightSign == Sign.zero:
-        print(f"Possible alarm: Division by zero: {expr}")
+        bv.add_tag(expr.address, "Sign Analysis", f"Division by zero")
         return Sign.zero
       return Sign.top
     case binaryninja.mediumlevelil.MediumLevelILMul:
@@ -1047,6 +1043,40 @@ def processComparison(expr: binaryninja.commonil.Comparison) -> Sign:
 
 
 #==================================================================
+# processCall
+#==================================================================
+# Derive sign of binaryninja.commonil.Call
+#
+# Introduce named function arguments into context while processing
+# the function call
+#==================================================================
+def processCall(expr: binaryninja.commonil.Call) -> Sign:
+  # Setup function-specific context
+  global context
+  prevContext = context
+  argSigns = list(map(lambda l: getSign(l), expr.params))
+  context = dict()
+
+  match type(expr.dest):
+    case binaryninja.mediumlevelil.MediumLevelILConstPtr:
+      callTo = view.get_function_at(expr.dest.constant)
+      if len(callTo.parameter_vars) != len(argSigns):
+        print("Unexpected amount of function arguments")
+        return
+      for arg in list(zip(callTo.parameter_vars, argSigns)):
+        context[arg[0].name] = arg[1]
+      for inst in callTo.mlil.instructions:
+        getSign(inst)
+        if isinstance(inst, binaryninja.commonil.Call):
+          detection(view, inst)
+    case binaryninja.mediumlevelil.MediumLevelILImport:
+      return
+    case default:
+      print(f"Unimplemented expression of type {type(expr)}")
+  context = prevContext
+
+
+#==================================================================
 # getSign
 #==================================================================
 # Derive type of mediumlevelIL instruction then derive sign
@@ -1065,8 +1095,7 @@ def getSign(expr) -> Sign:
   elif isinstance(expr, binaryninja.commonil.Store):
     return Sign.top
   elif isinstance(expr, binaryninja.commonil.Call):
-    # Future work: support call instructions
-    return Sign.top
+    return processCall(expr)
   elif isinstance(expr, binaryninja.commonil.ControlFlow):
     return Sign.top
   elif isinstance(expr, binaryninja.commonil.Comparison):
@@ -1090,7 +1119,7 @@ def getSign(expr) -> Sign:
       return sign
     return Sign.top
   elif isinstance(expr, binaryninja.mediumlevelil.MediumLevelILIntrinsic):
-    return Sign.bottom;
+    return Sign.top;
   elif isinstance(expr, int):
     return processInt(expr)
   elif isinstance(expr, str):
@@ -1110,8 +1139,13 @@ def getSign(expr) -> Sign:
 #==================================================================
 def signAnalysis(bv: binaryninja.binaryview.BinaryView,
                  entry: binaryninja.function.Function):
+  global view
+  global context
+  global tags
+  context = dict()
+  view = bv
+  tags = set()
   for inst in entry.mlil.instructions:
+    getSign(inst)
     if isinstance(inst, binaryninja.commonil.Call):
       detection(bv, inst)
-    else:
-      getSign(inst)
