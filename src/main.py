@@ -6,7 +6,7 @@ from analysis.sign.main import signAnalysis
 
 if __name__ == '__main__':
   description = """Sowing: a suite of tools dedicated to the analysis of the
-                 intermediate languages of binary ninja."""
+                 intermediate languages within binary ninja."""
   parser = argparse.ArgumentParser(description=description)
   parser.add_argument("-file", nargs="+",
                       help="Binary ninja database or binary for analysis",
@@ -36,6 +36,7 @@ if __name__ == '__main__':
   print(syms[0])
   entry = syms[0]
 
+  # Sign Analysis
   if args.sign is not None:
     bv.create_tag_type("Sign Analysis", "+")
     bv.create_tag_type("Fixup", "🔨")
