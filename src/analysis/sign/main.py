@@ -12,6 +12,17 @@ class Sign(Enum):
 
 
 #==================================================================
+# unifySigns
+#==================================================================
+# Given a set of signs return the supremum
+#==================================================================
+def unifySigns(signs: set) -> Sign:
+  if len(signs) == 1:
+    return signs[0]
+  return Sign.top
+
+
+#==================================================================
 # processVar
 #==================================================================
 # Derive sign of variable (by identifier) from context
@@ -1049,6 +1060,8 @@ def processComparison(expr: binaryninja.commonil.Comparison) -> Sign:
 #
 # Introduce named function arguments into context while processing
 # the function call
+#
+# Evaluate sign of return values
 #==================================================================
 def processCall(expr: binaryninja.commonil.Call) -> Sign:
   # Setup function-specific context
@@ -1056,6 +1069,7 @@ def processCall(expr: binaryninja.commonil.Call) -> Sign:
   prevContext = context
   argSigns = list(map(lambda l: getSign(l), expr.params))
   context = dict()
+  returnSign = set()
 
   match type(expr.dest):
     case binaryninja.mediumlevelil.MediumLevelILConstPtr:
@@ -1066,9 +1080,15 @@ def processCall(expr: binaryninja.commonil.Call) -> Sign:
       for arg in list(zip(callTo.parameter_vars, argSigns)):
         context[arg[0].name] = arg[1]
       for inst in callTo.mlil.instructions:
-        getSign(inst)
+        if isinstance(inst, binaryninja.commonil.Return):
+          # Check if database contains any lists greater than 1
+          if len(inst.src) > 0:
+            returnSign.add(getSign(inst.src[0]))
+        else:
+          getSign(inst)
         if isinstance(inst, binaryninja.commonil.Call):
           detection(view, inst)
+      return unifySigns(returnSign)
     case binaryninja.mediumlevelil.MediumLevelILImport:
       return
     case default:
