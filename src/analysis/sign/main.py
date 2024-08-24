@@ -17,8 +17,8 @@ class Sign(Enum):
 # Given a set of signs return the supremum
 #==================================================================
 def unifySigns(signs: set) -> Sign:
-  if len(signs) == 1:
-    return signs[0]
+  #if len(signs) == 1:
+  #  return signs[0]
   return Sign.top
 
 
@@ -302,6 +302,10 @@ def processArith(expr: binaryninja.commonil.Arithmetic):
       return processAsr(expr)
     case binaryninja.mediumlevelil.MediumLevelILNot:
       return processNot(expr)
+    case binaryninja.mediumlevelil.MediumLevelILIntToFloat:
+      return getSign(expr.src)
+    case binaryninja.mediumlevelil.MediumLevelILFloatConv:
+      return getSign(expr.src)
 
   print(f"Unimplemented: processArith({expr}) of ty {type(expr)}")
 
@@ -320,17 +324,19 @@ def processConstant(expr: binaryninja.commonil.Constant) -> Sign:
     return getSign(expr.constant)
   elif isinstance(expr, binaryninja.mediumlevelil.MediumLevelILConstData):
     return getSign(expr.constant_data.value)
+  elif isinstance(expr, binaryninja.mediumlevelil.MediumLevelILFloatConst):
+    return getSign(expr.constant)
   else:
-    print(f"Unimplemented expression: {expr} of ty: {type(expr)}")
+    print(f"Unimplemented constant expression: {expr} of ty: {type(expr)}")
     return None
 
 
 #==================================================================
-# processInt
+# processRawConst
 #==================================================================
-# Derive sign of raw python int
+# Derive sign of raw python int/float
 #==================================================================
-def processInt(expr: int) -> Sign:
+def processRawConst(expr) -> Sign:
   if expr == 0: return Sign.zero
   if expr > 0: return Sign.pos
   return Sign.neg
@@ -1029,17 +1035,23 @@ def processCmpUlt(expr: binaryninja.mediumlevelil.MediumLevelILCmpUlt) -> Sign:
 #==================================================================
 def processComparison(expr: binaryninja.commonil.Comparison) -> Sign:
   match type(expr):
-    case binaryninja.mediumlevelil.MediumLevelILCmpE:
+    case binaryninja.mediumlevelil.MediumLevelILCmpE | \
+         binaryninja.mediumlevelil.MediumLevelILFcmpE:
       return processCmpE(expr)
-    case binaryninja.mediumlevelil.MediumLevelILCmpNe:
+    case binaryninja.mediumlevelil.MediumLevelILCmpNe | \
+         binaryninja.mediumlevelil.MediumLevelILFcmpNe:
       return processCmpNe(expr)
-    case binaryninja.mediumlevelil.MediumLevelILCmpUgt:
+    case binaryninja.mediumlevelil.MediumLevelILCmpUgt | \
+         binaryninja.mediumlevelil.MediumLevelILFcmpGt:
       return processCmpUgt(expr)
-    case binaryninja.mediumlevelil.MediumLevelILCmpUge:
+    case binaryninja.mediumlevelil.MediumLevelILCmpUge | \
+         binaryninja.mediumlevelil.MediumLevelILFcmpGe:
       return processCmpUge(expr)
-    case binaryninja.mediumlevelil.MediumLevelILCmpUle:
+    case binaryninja.mediumlevelil.MediumLevelILCmpUle | \
+         binaryninja.mediumlevelil.MediumLevelILFcmpLe:
       return processCmpUle(expr)
-    case binaryninja.mediumlevelil.MediumLevelILCmpUlt:
+    case binaryninja.mediumlevelil.MediumLevelILCmpUlt | \
+         binaryninja.mediumlevelil.MediumLevelILFcmpLt:
       return processCmpUlt(expr)
     case binaryninja.mediumlevelil.MediumLevelILCmpSge:
       return processCmpSge(expr)
@@ -1140,8 +1152,8 @@ def getSign(expr) -> Sign:
     return Sign.top
   elif isinstance(expr, binaryninja.mediumlevelil.MediumLevelILIntrinsic):
     return Sign.top;
-  elif isinstance(expr, int):
-    return processInt(expr)
+  elif isinstance(expr, int) or isinstance(expr, float):
+    return processRawConst(expr)
   elif isinstance(expr, str):
     if expr in context.keys():
       return context[expr]
