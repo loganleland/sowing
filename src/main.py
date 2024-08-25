@@ -24,6 +24,9 @@ if __name__ == '__main__':
     print("[*] Failed to load bndb or binary")
     sys.exit(-1)
 
+  print("[*] Detected external libraries: ")
+  list(map(lambda l: print(f"  [+] {l}"), bv.get_external_libraries()))
+
   print("[*] Locating: " + args.entry[0])
   syms = bv.get_functions_by_name(args.entry[0])
   print(f"  [+] Found {len(syms)} possible entry symbols")
