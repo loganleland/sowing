@@ -1074,6 +1074,8 @@ def processComparison(expr: binaryninja.commonil.Comparison) -> Sign:
 # the function call
 #
 # Evaluate sign of return values
+#
+# TODO: Support recursion
 #==================================================================
 def processCall(expr: binaryninja.commonil.Call) -> Sign:
   # Setup function-specific context
@@ -1083,14 +1085,11 @@ def processCall(expr: binaryninja.commonil.Call) -> Sign:
   context = dict()
   returnSign = set()
 
-  print("================")
-  print(f"expr.output : {expr.output}")
   match type(expr.dest):
     case binaryninja.mediumlevelil.MediumLevelILConstPtr:
       callTo = view.get_function_at(expr.dest.constant)
-      print(f"name: {callTo.name}")
+      # Need to check for variable arguments
       if len(callTo.parameter_vars) != len(argSigns):
-        print("Unexpected amount of function arguments")
         return
       # Introduce function arguments mapped to signs into context
       for arg in list(zip(callTo.parameter_vars, argSigns)):
@@ -1099,7 +1098,6 @@ def processCall(expr: binaryninja.commonil.Call) -> Sign:
         if isinstance(inst, binaryninja.commonil.Return):
           # Check if database contains any lists greater than 1
           if len(inst.src) > 0:
-            print(f"inst.src: {inst.src}")
             returnSign.add(getSign(inst.src[0]))
         else:
           getSign(inst)

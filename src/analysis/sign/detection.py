@@ -5,6 +5,8 @@ from typing import Optional
 # Dynamic import of sign module
 signModule = importlib.import_module("analysis.sign.main")
 signTag = "Sign Analysis"
+# Keys are addresses mapped to a set of tag ty as str
+tags = dict()
 
 
 #==================================================================
@@ -20,6 +22,20 @@ def detection(bv: binaryninja.binaryview.BinaryView,
 
 
 #==================================================================
+# addTag
+#==================================================================
+# Add tag if address has no tag
+#==================================================================
+def addUniqueTag(bv: binaryninja.binaryview.BinaryView,
+                 addr: int, ty: str, msg: str) -> ():
+  if addr in tags.keys():
+    return
+  tags[addr] = set()
+  tags[addr].add(ty)
+  bv.add_tag(addr, ty, msg)
+  
+
+#==================================================================
 # justSign
 #==================================================================
 # Given a binja call expr and desired argument index return the
@@ -30,7 +46,7 @@ def detection(bv: binaryninja.binaryview.BinaryView,
 def justSign(bv: binaryninja.binaryview.BinaryView, expr: binaryninja.commonil.Call,
              paramIndex: int):
   if len(expr.params) < paramIndex+1:
-    bv.add_tag(expr.address, "Fixup", f"Expected minimum {paramIndex} arguments")
+    addUniqueTag(bv, expr.address, "Fixup", f"Expected minimum {paramIndex} arguments")
     return None
   return signModule.getSign(expr.params[paramIndex])
 
@@ -77,37 +93,37 @@ def detectionMem(bv: binaryninja.binaryview.BinaryView,
       if signArg0 is None:
         return
       if signArg0 is signModule.Sign.neg or signArg0 is signModule.Sign.zero:
-        bv.add_tag(expr.address, signTag, f"malloc(size := {signArg0})")
+        addUniqueTag(bv, expr.address, signTag, f"malloc(size := {signArg0})")
     case "calloc":
       signArg0 = justSign(bv, expr, 0)
       signArg1 = justSign(bv, expr, 1)
       if signArg0 is None or signArg1 is None:
         return
       if signArg0 is signModule.Sign.neg or signArg0 is signModule.Sign.zero:
-        bv.add_tag(expr.address, signTag, f"calloc(num := {signArg0})")
+        addUniqueTag(bv, expr.address, signTag, f"calloc(num := {signArg0})")
       if signArg1 is signModule.Sign.neg or signArg1 is signModule.Sign.zero:
-        bv.add_tag(expr.address, signTag, f"calloc(size := {signArg1})")
+        addUniqueTag(bv, expr.address, signTag, f"calloc(size := {signArg1})")
     case "aligned_alloc":
       signArg0 = justSign(bv, expr, 0)
       signArg1 = justSign(bv, expr, 1)
       if signArg0 is None or signArg1 is None:
         return
       if signArg0 is signModule.Sign.neg or signArg0 is signModule.Sign.zero:
-        bv.add_tag(expr.address, signTag, f"aligned_alloc(alignment := {signArg0})")
+        addUniqueTag(bv, expr.address, signTag, f"aligned_alloc(alignment := {signArg0})")
       if signArg1 is signModule.Sign.neg or signArg1 is signModule.Sign.zero:
-        bv.add_tag(expr.address, signTag, f"aligned_alloc(size := {signArg1})")
+        addUniqueTag(bv, expr.address, signTag, f"aligned_alloc(size := {signArg1})")
     case "realloc":
       signArg1 = justSign(bv, expr, 1)
       if signArg1 is None:
         return
       if signArg1 is signModule.Sign.neg or signArg1 is signModule.Sign.zero:
-        bv.add_tag(expr.address, signTag, f"realloc(new_size := {signArg1})")
+        addUniqueTag(bv, expr.address, signTag, f"realloc(new_size := {signArg1})")
     case "free_sized":
       signArg1 = justSign(bv, expr, 1)
       if signArg1 is None:
         return
       if signArg1 is signModule.Sign.neg or signArg1 is signModule.Sign.zero:
-        bv.add_tag(expr.address, signTag, f"free_sized(new_size := {signArg1})")
+        addUniqueTag(bv, expr.address, signTag, f"free_sized(new_size := {signArg1})")
     case default:
       return
 
@@ -129,25 +145,25 @@ def detectionString(bv: binaryninja.binaryview.BinaryView,
       if sign is None:
         return
       if sign is signModule.Sign.neg or sign is signModule.Sign.zero:
-        bv.add_tag(expr.address, signTag, f"strncpy(n := {sign})")
+        addUniqueTag(bv, expr.address, signTag, f"strncpy(n := {sign})")
     case "strncat":
       sign = justSign(bv, expr, 2)
       if sign is None:
         return
       if sign is signModule.Sign.neg or sign is signModule.Sign.zero:
-        bv.add_tag(expr.address, signTag, f"strncat(n := {sign})")
+        addUniqueTag(bv, expr.address, signTag, f"strncat(n := {sign})")
     case "strncmp":
       sign = justSign(bv, expr, 2)
       if sign is None:
         return
       if sign is signModule.Sign.neg or sign is signModule.Sign.zero:
-        bv.add_tag(expr.address, signTag, f"strncmp(n := {sign})")
+        addUniqueTag(bv, expr.address, signTag, f"strncmp(n := {sign})")
     case "wcsncmp":
       sign = justSign(bv, expr, 2)
       if sign is None:
         return
       if sign is signModule.Sign.neg or sign is signModule.Sign.zero:
-        bv.add_tag(expr.address, signTag, f"wcsncmp(count := {sign})")
+        addUniqueTag(bv, expr.address, signTag, f"wcsncmp(count := {sign})")
     case default:
       return
 
@@ -169,24 +185,24 @@ def detectionCPPContainer(bv: binaryninja.binaryview.BinaryView,
       if signArg1 is None:
         return
       if signArg1 is signModule.Sign.neg:
-        bv.add_tag(expr.address, signTag, f"vector::resize(n := {signArg1})")
+        addUniqueTag(bv, expr.address, signTag, f"vector::resize(n := {signArg1})")
     case "_ZNSt6vectorIi6NAllocIiEE7reserveEm":
       signArg1 = justSign(bv, expr, 1)
       if signArg1 is None:
         return
       if signArg1 is signModule.Sign.neg or signArg1 is signModule.Sign.zero:
-        bv.add_tag(expr.address, signTag, f"vector::reserve(n := {signArg1})")
+        addUniqueTag(bv, expr.address, signTag, f"vector::reserve(n := {signArg1})")
     case "_ZNSt5dequeIiSaIiEE6resizeEm":
       signArg1 = justSign(bv, expr, 1)
       if signArg1 is None:
         return
       if signArg1 is signModule.Sign.neg or signArg1 is signModule.Sign.zero:
-        bv.add_tag(expr.address, signTag, f"deque::resize(count := {signArg1})")
+        addUniqueTag(bv, expr.address, signTag, f"deque::resize(count := {signArg1})")
     case "_ZNSt12forward_listIiSaIiEE6resizeEm":
       signArg1 = justSign(bv, expr, 1)
       if signArg1 is None:
         return
       if signArg1 is signModule.Sign.neg or signArg1 is signModule.Sign.zero:
-        bv.add_tag(expr.address, signTag, f"forward_list::resize(count := {signArg1})")
+        addUniqueTag(bv, expr.address, signTag, f"forward_list::resize(count := {signArg1})")
     case default:
       return
