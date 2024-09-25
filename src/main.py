@@ -19,10 +19,13 @@ if __name__ == '__main__':
                        required=True)
 
   args = parser.parse_args()
-  bv = binaryninja.load(args.file[0])
+  bv = binaryninja.load(args.file[0], options={'analysis.signatureMatcher.autorun': True})
   if bv is None:
-    print("[*] Failed to load bndb or binary")
+    print(f"[*] Failed to load {args.file[0]}")
     sys.exit(-1)
+
+  print("[*] Detected external libraries: ")
+  list(map(lambda l: print(f"  [+] {l}"), bv.get_external_libraries()))
 
   print("[*] Locating: " + args.entry[0])
   syms = bv.get_functions_by_name(args.entry[0])
@@ -33,8 +36,8 @@ if __name__ == '__main__':
   if len(syms) != 1:
     print("  [+] Not unique symbol name, provide address (not supported yet)")
     sys.exit(-1)
-  print(syms[0])
   entry = syms[0]
+  print(f"Entry: {entry}")
 
   # Sign Analysis
   if args.sign is not None:

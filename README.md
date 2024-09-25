@@ -1,14 +1,24 @@
-# Sowing
+<div align="center">
 
-<img src="https://github.com/loganleland/sow/assets/6620612/4ef6608d-195d-4a8c-9498-a8ecfa2d73d2" alt="drawing" width="300"/>
+![sowing-removebg-preview](https://github.com/user-attachments/assets/ca5e7326-5d1f-40d2-8170-5b404a84d83e)
+
 
 *verb: plant (seed) by scattering it on or in the earth*
 
+</div>
+
 **Sowing** is a suite of tools dedicated to the analysis of any loader and architecture supported by [Binary Ninja](https://binary.ninja/). Currently all analysis operates over [Medium Level IL](https://docs.binary.ninja/dev/bnil-mlil.html).
 
+---
+
+<div align="center">
+  
 | Analysis | Maturity | Path | Tag 
 | -------- | -------- | -------- | -------- |
 | Sign     | Initial  | src/analysis/sign | ```+``` Sign Analysis
+
+---
+</div>
 
 # Usage
 Sowing can be used from the command line by specifying:

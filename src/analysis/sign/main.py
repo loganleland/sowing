@@ -12,6 +12,29 @@ class Sign(Enum):
 
 
 #==================================================================
+# unifySigns
+#==================================================================
+# Given a set of signs return the sign that appears most useful
+# for bug finding.
+#
+# TODO: at function call sites process each possible return value
+# sign 
+#==================================================================
+def unifySigns(signs: set) -> Sign:
+  if len(signs) == 1:
+    return signs[0]
+  if Sign.top in signs:
+    return Sign.top
+  if Sign.pos in signs:
+    return Sign.pos
+  if Sign.zero in signs:
+    return Sign.zero
+  if Sign.neg in signs:
+    return Sign.neg
+  return Sign.bottom
+
+
+#==================================================================
 # processVar
 #==================================================================
 # Derive sign of variable (by identifier) from context
@@ -291,6 +314,10 @@ def processArith(expr: binaryninja.commonil.Arithmetic):
       return processAsr(expr)
     case binaryninja.mediumlevelil.MediumLevelILNot:
       return processNot(expr)
+    case binaryninja.mediumlevelil.MediumLevelILIntToFloat:
+      return getSign(expr.src)
+    case binaryninja.mediumlevelil.MediumLevelILFloatConv:
+      return getSign(expr.src)
 
   print(f"Unimplemented: processArith({expr}) of ty {type(expr)}")
 
@@ -309,17 +336,19 @@ def processConstant(expr: binaryninja.commonil.Constant) -> Sign:
     return getSign(expr.constant)
   elif isinstance(expr, binaryninja.mediumlevelil.MediumLevelILConstData):
     return getSign(expr.constant_data.value)
+  elif isinstance(expr, binaryninja.mediumlevelil.MediumLevelILFloatConst):
+    return getSign(expr.constant)
   else:
-    print(f"Unimplemented expression: {expr} of ty: {type(expr)}")
+    print(f"Unimplemented constant expression: {expr} of ty: {type(expr)}")
     return None
 
 
 #==================================================================
-# processInt
+# processRawConst
 #==================================================================
-# Derive sign of raw python int
+# Derive sign of raw python int/float
 #==================================================================
-def processInt(expr: int) -> Sign:
+def processRawConst(expr) -> Sign:
   if expr == 0: return Sign.zero
   if expr > 0: return Sign.pos
   return Sign.neg
@@ -1018,17 +1047,23 @@ def processCmpUlt(expr: binaryninja.mediumlevelil.MediumLevelILCmpUlt) -> Sign:
 #==================================================================
 def processComparison(expr: binaryninja.commonil.Comparison) -> Sign:
   match type(expr):
-    case binaryninja.mediumlevelil.MediumLevelILCmpE:
+    case binaryninja.mediumlevelil.MediumLevelILCmpE | \
+         binaryninja.mediumlevelil.MediumLevelILFcmpE:
       return processCmpE(expr)
-    case binaryninja.mediumlevelil.MediumLevelILCmpNe:
+    case binaryninja.mediumlevelil.MediumLevelILCmpNe | \
+         binaryninja.mediumlevelil.MediumLevelILFcmpNe:
       return processCmpNe(expr)
-    case binaryninja.mediumlevelil.MediumLevelILCmpUgt:
+    case binaryninja.mediumlevelil.MediumLevelILCmpUgt | \
+         binaryninja.mediumlevelil.MediumLevelILFcmpGt:
       return processCmpUgt(expr)
-    case binaryninja.mediumlevelil.MediumLevelILCmpUge:
+    case binaryninja.mediumlevelil.MediumLevelILCmpUge | \
+         binaryninja.mediumlevelil.MediumLevelILFcmpGe:
       return processCmpUge(expr)
-    case binaryninja.mediumlevelil.MediumLevelILCmpUle:
+    case binaryninja.mediumlevelil.MediumLevelILCmpUle | \
+         binaryninja.mediumlevelil.MediumLevelILFcmpLe:
       return processCmpUle(expr)
-    case binaryninja.mediumlevelil.MediumLevelILCmpUlt:
+    case binaryninja.mediumlevelil.MediumLevelILCmpUlt | \
+         binaryninja.mediumlevelil.MediumLevelILFcmpLt:
       return processCmpUlt(expr)
     case binaryninja.mediumlevelil.MediumLevelILCmpSge:
       return processCmpSge(expr)
@@ -1049,6 +1084,10 @@ def processComparison(expr: binaryninja.commonil.Comparison) -> Sign:
 #
 # Introduce named function arguments into context while processing
 # the function call
+#
+# Evaluate sign of return values
+#
+# TODO: Support recursion
 #==================================================================
 def processCall(expr: binaryninja.commonil.Call) -> Sign:
   # Setup function-specific context
@@ -1056,19 +1095,27 @@ def processCall(expr: binaryninja.commonil.Call) -> Sign:
   prevContext = context
   argSigns = list(map(lambda l: getSign(l), expr.params))
   context = dict()
+  returnSign = set()
 
   match type(expr.dest):
     case binaryninja.mediumlevelil.MediumLevelILConstPtr:
       callTo = view.get_function_at(expr.dest.constant)
+      # Need to check for variable arguments
       if len(callTo.parameter_vars) != len(argSigns):
-        print("Unexpected amount of function arguments")
         return
+      # Introduce function arguments mapped to signs into context
       for arg in list(zip(callTo.parameter_vars, argSigns)):
         context[arg[0].name] = arg[1]
       for inst in callTo.mlil.instructions:
-        getSign(inst)
+        if isinstance(inst, binaryninja.commonil.Return):
+          # Check if database contains any lists greater than 1
+          if len(inst.src) > 0:
+            returnSign.add(getSign(inst.src[0]))
+        else:
+          getSign(inst)
         if isinstance(inst, binaryninja.commonil.Call):
           detection(view, inst)
+      return unifySigns(returnSign)
     case binaryninja.mediumlevelil.MediumLevelILImport:
       return
     case default:
@@ -1120,8 +1167,8 @@ def getSign(expr) -> Sign:
     return Sign.top
   elif isinstance(expr, binaryninja.mediumlevelil.MediumLevelILIntrinsic):
     return Sign.top;
-  elif isinstance(expr, int):
-    return processInt(expr)
+  elif isinstance(expr, int) or isinstance(expr, float):
+    return processRawConst(expr)
   elif isinstance(expr, str):
     if expr in context.keys():
       return context[expr]
