@@ -14,12 +14,24 @@ class Sign(Enum):
 #==================================================================
 # unifySigns
 #==================================================================
-# Given a set of signs return the supremum
+# Given a set of signs return the sign that appears most useful
+# for bug finding.
+#
+# TODO: at function call sites process each possible return value
+# sign 
 #==================================================================
 def unifySigns(signs: set) -> Sign:
-  #if len(signs) == 1:
-  #  return signs[0]
-  return Sign.top
+  if len(signs) == 1:
+    return signs[0]
+  if Sign.top in signs:
+    return Sign.top
+  if Sign.pos in signs:
+    return Sign.pos
+  if Sign.zero in signs:
+    return Sign.zero
+  if Sign.neg in signs:
+    return Sign.neg
+  return Sign.bottom
 
 
 #==================================================================
