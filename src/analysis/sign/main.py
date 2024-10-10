@@ -20,18 +20,18 @@ class Sign(Enum):
 # TODO: at function call sites process each possible return value
 # sign 
 #==================================================================
-def unifySigns(signs: set) -> Sign:
-  if len(signs) == 1:
-    return signs[0]
-  if Sign.top in signs:
-    return Sign.top
-  if Sign.pos in signs:
-    return Sign.pos
-  if Sign.zero in signs:
-    return Sign.zero
-  if Sign.neg in signs:
-    return Sign.neg
-  return Sign.bottom
+#def unifySigns(signs: set) -> Sign:
+#  if len(signs) == 1:
+#    return signs[0]
+#  if Sign.top in signs:
+#    return Sign.top
+#  if Sign.pos in signs:
+#    return Sign.pos
+#  if Sign.zero in signs:
+#    return Sign.zero
+#  if Sign.neg in signs:
+#    return Sign.neg
+#  return Sign.bottom
 
 
 #==================================================================
@@ -1115,7 +1115,7 @@ def processCall(expr: binaryninja.commonil.Call) -> Sign:
           getSign(inst)
         if isinstance(inst, binaryninja.commonil.Call):
           detection(view, inst)
-      return unifySigns(returnSign)
+      return Sign.top
     case binaryninja.mediumlevelil.MediumLevelILImport:
       return
     case default:
