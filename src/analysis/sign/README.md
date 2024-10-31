@@ -4,22 +4,18 @@ This analysis implements the following Hasse Diagram
 
 ```mermaid
   graph TD;
-    negZero[<=0] --> T;
-    nonZero[!=0] --> T;
-    posZero[>=0] --> T;
-
-    neg[<0] --> nonZero;
-    pos[>0] --> nonZero;
-
-    eqZero[=0] --> negZero;
-    neg --> negZero;
-
-    eqZero --> posZero;
-    pos --> posZero;
-
-    Bottom[⊥] --> neg;
-    Bottom --> eqZero;
-    Bottom --> pos;
+    negZero[<=0]->>T;
+    nonZero[!=0]->>T;
+    posZero[>=0]->>T;
+    neg[<0]->>nonZero;
+    pos[>0]->>nonZero;
+    eqZero[=0]->>negZero;
+    neg->>negZero;
+    eqZero->>posZero;
+    pos->>posZero;
+    Bottom[⊥]->>neg;
+    Bottom->>eqZero;
+    Bottom->>pos;
 ```
 
 ## Detections
