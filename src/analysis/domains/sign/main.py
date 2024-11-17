@@ -1,6 +1,6 @@
 import binaryninja
 from enum import Enum
-from analysis.sign.detection import detection
+from analysis.domains.sign.detection import detection
 
 # Abstract domain
 class Sign(Enum):
