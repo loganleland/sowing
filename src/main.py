@@ -1,8 +1,8 @@
 import argparse
 import binaryninja
 import sys
-from analysis.domains.sign.main import signAnalysis
-
+from analysis.domains.sign.main import getSign, initSign
+from analysis.domains.sign.detection import detection
 
 #==================================================================
 # getEntry
@@ -53,7 +53,10 @@ if __name__ == '__main__':
   bv.create_tag_type("Sign Analysis", "+")
   bv.create_tag_type("Fixup", "🔨")
   print("[*] Executing sign analysis")
-  signAnalysis(bv, entry)
-
+  initSign(bv)
+  for inst in entry.mlil.instructions:
+    getSign(inst)
+    if isinstance(inst, binaryninja.commonil.Call):
+      detection(bv, inst)
   bv.create_database(args.out[0])
   bv.file.close()
