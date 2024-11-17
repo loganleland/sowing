@@ -3,7 +3,7 @@ import importlib
 from typing import Optional
 
 # Dynamic import of sign module
-signModule = importlib.import_module("analysis.sign.main")
+signModule = importlib.import_module("analysis.domains.sign.main")
 signTag = "Sign Analysis"
 # Keys are addresses mapped to a set of tag ty as str
 tags = dict()
@@ -14,7 +14,7 @@ tags = dict()
 #==================================================================
 # Execute all detections available for sign analysis
 #==================================================================
-def detection(bv: binaryninja.binaryview.BinaryView,
+def detectionSign(bv: binaryninja.binaryview.BinaryView,
               expr: binaryninja.commonil.Call):
   detectionMem(bv, expr)
   detectionString(bv, expr)

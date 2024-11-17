@@ -1,6 +1,6 @@
 import binaryninja
 from enum import Enum
-from analysis.sign.detection import detection
+from analysis.domains.sign.detection import detectionSign
 
 # Abstract domain
 class Sign(Enum):
@@ -10,6 +10,20 @@ class Sign(Enum):
   pos = 4
   bottom = 5
 
+global context
+global view
+global tags
+context = dict()
+view = None
+tags = set()
+
+#==================================================================
+# initSign
+#==================================================================
+#==================================================================
+def initSign(bv):
+  global view
+  view = bv
 
 #==================================================================
 # unifySigns
@@ -1114,7 +1128,7 @@ def processCall(expr: binaryninja.commonil.Call) -> Sign:
         else:
           getSign(inst)
         if isinstance(inst, binaryninja.commonil.Call):
-          detection(view, inst)
+          detectionSign(view, inst)
       return Sign.top
     case binaryninja.mediumlevelil.MediumLevelILImport:
       return
@@ -1176,23 +1190,3 @@ def getSign(expr) -> Sign:
   else:
     print(f"getSign unimpl expr: {expr}, ty: {type(expr)}")
 
-
-#==================================================================
-# signAnalysis
-#==================================================================
-# Top level sign analysis function. 
-# For each instruction in the entry function update context
-# as needed with variable identifers mapped to their sign
-#==================================================================
-def signAnalysis(bv: binaryninja.binaryview.BinaryView,
-                 entry: binaryninja.function.Function):
-  global view
-  global context
-  global tags
-  context = dict()
-  view = bv
-  tags = set()
-  for inst in entry.mlil.instructions:
-    getSign(inst)
-    if isinstance(inst, binaryninja.commonil.Call):
-      detection(bv, inst)
