@@ -14,7 +14,7 @@ tags = dict()
 #==================================================================
 # Execute all detections available for sign analysis
 #==================================================================
-def detection(bv: binaryninja.binaryview.BinaryView,
+def detectionSign(bv: binaryninja.binaryview.BinaryView,
               expr: binaryninja.commonil.Call):
   detectionMem(bv, expr)
   detectionString(bv, expr)

@@ -1,6 +1,6 @@
 import binaryninja
 from enum import Enum
-from analysis.domains.sign.detection import detection
+from analysis.domains.sign.detection import detectionSign
 
 # Abstract domain
 class Sign(Enum):
@@ -1128,7 +1128,7 @@ def processCall(expr: binaryninja.commonil.Call) -> Sign:
         else:
           getSign(inst)
         if isinstance(inst, binaryninja.commonil.Call):
-          detection(view, inst)
+          detectionSign(view, inst)
       return Sign.top
     case binaryninja.mediumlevelil.MediumLevelILImport:
       return

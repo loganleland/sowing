@@ -2,7 +2,7 @@ import argparse
 import binaryninja
 import sys
 from analysis.domains.sign.main import getSign, initSign
-from analysis.domains.sign.detection import detection
+from analysis.domains.sign.detection import detectionSign
 
 #==================================================================
 # getEntry
@@ -57,6 +57,6 @@ if __name__ == '__main__':
   for inst in entry.mlil.instructions:
     getSign(inst)
     if isinstance(inst, binaryninja.commonil.Call):
-      detection(bv, inst)
+      detectionSign(bv, inst)
   bv.create_database(args.out[0])
   bv.file.close()
